@@ -79,6 +79,7 @@ services:
 
   python-app:
     build: ./apps/python-flask
+    restart: on-failure
     environment:
       - DD_AGENT_HOST=dd-agent
       - DD_TRACE_AGENT_PORT=8126
@@ -104,6 +105,7 @@ services:
 
   node-app:
     build: ./apps/node-express
+    restart: on-failure
     environment:
       - DD_AGENT_HOST=dd-agent
       - DD_TRACE_AGENT_PORT=8126
@@ -129,6 +131,7 @@ services:
 
   java-app:
     build: ./apps/java-spring
+    restart: on-failure
     environment:
       - DD_AGENT_HOST=dd-agent
       - DD_TRACE_AGENT_PORT=8126
@@ -156,6 +159,7 @@ services:
 
   php-app:
     build: ./apps/php-slim
+    restart: on-failure
     environment:
       - DD_AGENT_HOST=dd-agent
       - DD_TRACE_AGENT_PORT=8126
