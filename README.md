@@ -34,6 +34,8 @@ Make sure you have these installed before starting:
 | Python 3 (optional) | `python3 --version` | Only needed for the SIEM event generator |
 | [Terraform](https://developer.hashicorp.com/terraform/install) (optional) | `terraform --version` | Only for AWS cloud modules |
 
+If you only want to test a specific product, check the [`playbooks/`](playbooks/) folder for per-product guides.
+
 ## Quick Start
 
 ```bash
