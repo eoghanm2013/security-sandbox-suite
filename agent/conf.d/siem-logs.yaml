@@ -1,48 +1,16 @@
 logs:
   - type: file
-    path: /var/log/sandbox/sshd.log
-    source: sshd
-    service: sshd
+    path: /var/log/sandbox/cloudtrail.log
+    source: cloudtrail
+    service: cloudtrail
     tags:
       - "env:sandbox"
       - "team:security-testing"
 
   - type: file
-    path: /var/log/sandbox/auth.log
-    source: auth
-    service: webapp
-    tags:
-      - "env:sandbox"
-      - "team:security-testing"
-
-  - type: file
-    path: /var/log/sandbox/dns.log
-    source: dns
-    service: dns
-    tags:
-      - "env:sandbox"
-      - "team:security-testing"
-
-  - type: file
-    path: /var/log/sandbox/sudo.log
-    source: sudo
-    service: sudo
-    tags:
-      - "env:sandbox"
-      - "team:security-testing"
-
-  - type: file
-    path: /var/log/sandbox/auditd.log
-    source: auditd
-    service: auditd
-    tags:
-      - "env:sandbox"
-      - "team:security-testing"
-
-  - type: file
-    path: /var/log/sandbox/firewall.log
-    source: firewall
-    service: firewall
+    path: /var/log/sandbox/okta.log
+    source: okta
+    service: okta
     tags:
       - "env:sandbox"
       - "team:security-testing"
