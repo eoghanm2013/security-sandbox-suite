@@ -13,11 +13,11 @@ export const options = {
     scenarios: {
         attack_traffic: {
             executor: 'constant-arrival-rate',
-            rate: 6,
+            rate: 2,
             timeUnit: '1m',
             duration: '24h',
             preAllocatedVUs: 1,
-            maxVUs: 3,
+            maxVUs: 2,
         },
     },
 };

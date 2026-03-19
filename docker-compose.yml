@@ -48,7 +48,7 @@ services:
       - DD_APM_ENABLED=true
       - DD_APM_NON_LOCAL_TRAFFIC=true
       - DD_LOGS_ENABLED=true
-      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=false
       - DD_PROCESS_AGENT_ENABLED=true
       - DD_SYSTEM_PROBE_ENABLED=true
       - DD_RUNTIME_SECURITY_CONFIG_ENABLED=true
@@ -189,7 +189,7 @@ services:
     volumes:
       - ./siem:/app:ro
       - siem-logs:/var/log/sandbox
-    command: ["python3", "event-generator.py", "--loop", "--interval", "60"]
+    command: ["python3", "event-generator.py", "--loop", "--interval", "300"]
     depends_on:
       dd-agent:
         condition: service_started

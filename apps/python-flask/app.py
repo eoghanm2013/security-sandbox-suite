@@ -1,3 +1,4 @@
+import logging
 import os
 import pickle
 import base64
@@ -7,6 +8,8 @@ import urllib.request
 import psycopg2
 import redis
 from flask import Flask, request, render_template, redirect, jsonify, session
+
+logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
 # SAST finding: hardcoded credentials
 DB_HOST = os.environ.get("DATABASE_URL", "postgresql://petshop:petshop123@localhost:5432/petshop")

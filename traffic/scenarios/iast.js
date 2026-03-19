@@ -14,7 +14,7 @@ export const options = {
     scenarios: {
         iast_traffic: {
             executor: 'constant-arrival-rate',
-            rate: 4,
+            rate: 2,
             timeUnit: '1m',
             duration: '24h',
             preAllocatedVUs: 1,

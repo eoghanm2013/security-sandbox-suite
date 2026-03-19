@@ -13,11 +13,11 @@ export const options = {
     scenarios: {
         normal_browsing: {
             executor: 'constant-arrival-rate',
-            rate: 10,
+            rate: 2,
             timeUnit: '1m',
             duration: '24h',
-            preAllocatedVUs: 2,
-            maxVUs: 5,
+            preAllocatedVUs: 1,
+            maxVUs: 2,
         },
     },
 };

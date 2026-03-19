@@ -280,8 +280,8 @@ def main():
                         help="Print to stdout instead of writing files")
     parser.add_argument("--loop", action="store_true",
                         help="Run continuously")
-    parser.add_argument("--interval", type=int, default=60,
-                        help="Seconds between loops (default: 60)")
+    parser.add_argument("--interval", type=int, default=300,
+                        help="Seconds between loops (default: 300)")
     args = parser.parse_args()
 
     output_dir = None if args.stdout else args.output_dir

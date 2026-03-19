@@ -4,7 +4,7 @@ apm_config:
 
 logs_enabled: true
 logs_config:
-  container_collect_all: true
+  container_collect_all: false
 
 process_config:
   process_collection:
