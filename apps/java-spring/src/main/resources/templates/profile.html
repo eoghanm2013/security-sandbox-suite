@@ -35,7 +35,7 @@
             <p th:if="${user}"><strong>Email:</strong> <span th:text="${user.email}">email</span></p>
             <p th:if="${user}"><strong>Role:</strong> <span th:text="${user.role}">role</span></p>
             <p th:if="${user}"><strong>Member since:</strong> <span th:text="${user.created_at}">date</span></p>
-            <div th:if="${user == null}" class="alert alert-error" th:utext="'User \"' + ${username} + '\" not found.'">User not found.</div>
+            <div th:if="${user == null}" class="alert alert-error" th:utext="'User &quot;' + ${username} + '&quot; not found.'">User not found.</div>
         </div>
     </main>
     <footer th:replace="~{fragments/footer :: footer}"></footer>

@@ -15,7 +15,7 @@ export const options = {
             executor: 'constant-arrival-rate',
             rate: 6,
             timeUnit: '1m',
-            duration: '0',
+            duration: '24h',
             preAllocatedVUs: 1,
             maxVUs: 3,
         },
@@ -119,7 +119,8 @@ export default function () {
 
     // Path traversal in upload
     const traversal = TRAVERSAL_PAYLOADS[Math.floor(Math.random() * TRAVERSAL_PAYLOADS.length)];
-    const formData = { filename: traversal, file: http.file(new Uint8Array([116, 101, 115, 116]), 'test.txt') };
+    const fileContent = new Uint8Array([116, 101, 115, 116]).buffer;
+    const formData = { filename: traversal, file: http.file(fileContent, 'test.txt') };
     http.post(`${HOST}${prefix}/upload`, formData);
     sleep(1);
 

@@ -1,7 +1,7 @@
 services:
   traffic-normal:
     build: ./traffic
-    command: ["run", "--vus", "2", "--duration", "0", "/scripts/scenarios/normal.js"]
+    command: ["run", "/scripts/scenarios/normal.js"]
     environment:
       - TARGET_HOST=nginx
       - TARGET_PORT=80
@@ -11,7 +11,7 @@ services:
 
   traffic-attacks:
     build: ./traffic
-    command: ["run", "--vus", "1", "--duration", "0", "/scripts/scenarios/attacks.js"]
+    command: ["run", "/scripts/scenarios/attacks.js"]
     environment:
       - TARGET_HOST=nginx
       - TARGET_PORT=80
@@ -21,7 +21,7 @@ services:
 
   traffic-iast:
     build: ./traffic
-    command: ["run", "--vus", "1", "--duration", "0", "/scripts/scenarios/iast.js"]
+    command: ["run", "/scripts/scenarios/iast.js"]
     environment:
       - TARGET_HOST=nginx
       - TARGET_PORT=80

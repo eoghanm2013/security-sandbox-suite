@@ -16,7 +16,7 @@ export const options = {
             executor: 'constant-arrival-rate',
             rate: 4,
             timeUnit: '1m',
-            duration: '0',
+            duration: '24h',
             preAllocatedVUs: 1,
             maxVUs: 2,
         },
@@ -47,9 +47,10 @@ export default function () {
     sleep(1);
 
     // Tainted input to file system (source: form body, sink: file write)
+    const fileContent = new Uint8Array([73, 65, 83, 84]).buffer;
     const formData = {
         filename: '../../tmp/iast-test.txt',
-        file: http.file(new Uint8Array([73, 65, 83, 84]), 'test.txt'),
+        file: http.file(fileContent, 'test.txt'),
     };
     http.post(`${HOST}${prefix}/upload`, formData);
     sleep(1);

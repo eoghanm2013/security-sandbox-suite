@@ -20,10 +20,38 @@ Full-suite Datadog Security product testing environment. Run locally with Docker
 | **CIEM** | - | Yes | Over-permissioned IAM roles, cross-account access |
 | **VM** (Vulnerabilities) | - | Yes | EC2 with vulnerable packages, ECR with vuln images |
 
+## Prerequisites
+
+On a fresh Mac, run these first:
+
+```bash
+# Install Homebrew (if you don't have it)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Git (macOS may already have it via Xcode CLT)
+brew install git
+
+# Install Docker Desktop
+brew install --cask docker
+# Then open Docker Desktop from Applications and complete the setup wizard
+```
+
+Once those are installed:
+
+| Requirement | How to verify | Notes |
+|-------------|--------------|-------|
+| Docker Desktop running | `docker info` | Must be open and running, not just installed |
+| Git | `git --version` | Comes with Xcode CLT or Homebrew |
+| Datadog API Key | [Get one here](https://app.datadoghq.com/organization-settings/api-keys) | Only required credential |
+| Python 3 (optional) | `python3 --version` | Pre-installed on macOS, only needed for SIEM event generator |
+| Terraform (optional) | `brew install terraform` | Only for AWS cloud modules |
+
 ## Quick Start
 
 ```bash
-# 1. Set up your environment
+# 1. Clone and set up your environment
+git clone https://github.com/eoghanm2013/security-sandbox-suite.git
+cd security-sandbox-suite
 cp .env.example .env
 # Edit .env and add your DD_API_KEY
 
