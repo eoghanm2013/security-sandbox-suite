@@ -97,6 +97,19 @@ Each language implements the same pet supply store with identical vulnerability 
 | `scripts/aws-deploy.sh` | Deploy AWS resources (Terraform) |
 | `scripts/aws-destroy.sh` | Tear down AWS resources |
 
+## Cleanup
+
+```bash
+# Stop all containers
+./scripts/down.sh
+
+# Stop and remove volumes (database data, SIEM logs)
+./scripts/down.sh -v
+
+# Full cleanup: containers, volumes, and built images
+./scripts/down.sh -v --rmi local
+```
+
 ## AWS (On-Demand)
 
 Cloud-only products use Terraform in `terraform/aws/`. Tag your resources appropriately for your environment.
