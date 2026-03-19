@@ -13,7 +13,7 @@ process_config:
     enabled: true
 
 runtime_security_config:
-  enabled: true
+  enabled: false
   activity_dump:
     enabled: true
 

@@ -39,26 +39,21 @@ If you only want to test a specific product, check the [`playbooks/`](playbooks/
 ## Quick Start
 
 ```bash
-# 1. Clone and set up your environment
+# 1. Clone
 git clone https://github.com/eoghanm2013/security-sandbox-suite.git
 cd security-sandbox-suite
-cp .env.example .env
-# Edit .env and add your DD_API_KEY
 
-# 2. Start the local stack
+# 2. Run the interactive setup (creates .env, asks for API key and products)
 ./scripts/up.sh
-
-# 3. Open the gateway
-open http://localhost:8080
-
-# 4. Start synthetic traffic (normal + attacks + IAST)
-./scripts/traffic.sh start
-
-# 5. Check Datadog for signals
-#    - APM: Service Catalog > petshop-*
-#    - Security: Security > Application Security
-#    - CWS: Security > Workload Security
 ```
+
+The startup script will:
+1. Create `.env` and ask for your `DD_API_KEY` (first run only)
+2. Show a product menu where you pick what to test
+3. Optionally start traffic generators
+4. Launch only the containers you need
+
+To skip the menu and start everything: `./scripts/up.sh --all`
 
 ## Architecture
 
@@ -94,7 +89,8 @@ Each language implements the same pet supply store with identical vulnerability 
 
 | Script | What it does |
 |--------|-------------|
-| `scripts/up.sh` | Start the full local stack |
+| `scripts/up.sh` | Interactive startup (pick products, configure .env, launch) |
+| `scripts/up.sh --all` | Start everything, no prompts |
 | `scripts/down.sh` | Stop everything |
 | `scripts/traffic.sh start [profile]` | Start traffic (all/normal/attacks/iast) |
 | `scripts/traffic.sh stop` | Stop traffic generators |
