@@ -66,4 +66,4 @@ docker push <ecr_repo_url>:vulnerable-base
 
 - [Vulnerability Management Documentation](https://docs.datadoghq.com/security/cloud_security_management/vulnerabilities/)
 - [SBOM Collection](https://docs.datadoghq.com/security/cloud_security_management/vulnerabilities/setup/)
-- [VM Troubleshooting](https://docs.datadoghq.com/security/cloud_security_management/vulnerabilities/)
+- [VM Troubleshooting](https://docs.datadoghq.com/security/cloud_security_management/vulnerabilities/troubleshooting/)

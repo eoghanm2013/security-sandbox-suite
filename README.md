@@ -18,7 +18,7 @@ Full-suite Datadog Security product testing environment. Run locally with Docker
 | **SAST** | Yes | - | App source code has intentional vulns (scan target) |
 | **CWS** (Workload Protection) | Yes | - | Agent with system-probe, trigger scripts |
 | **Cloud SIEM** | Yes | Yes | Local event generator + AWS CloudTrail/GuardDuty |
-| **CSPM** | - | Yes | Intentionally misconfigured S3, SG, IAM, EBS |
+| **CSPM** | - | Yes | Intentionally misconfigured S3, SG, EBS |
 | **CIEM** | - | Yes | Over-permissioned IAM roles, cross-account access |
 | **VM** (Vulnerabilities) | - | Yes | EC2 with vulnerable packages, ECR with vuln images |
 
@@ -30,7 +30,7 @@ Make sure you have these installed before starting:
 |-------------|--------------|-------|
 | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | `docker info` | Must be open and running, not just installed |
 | [Git](https://git-scm.com/) | `git --version` | |
-| Datadog API Key | [Get one here](https://app.datadoghq.com/organization-settings/api-keys) | Only required credential |
+| Datadog API Key | [Get one here](https://app.datadoghq.com/organization-settings/api-keys) | Required. App Key is optional (see `.env.example`). |
 | Python 3 (optional) | `python3 --version` | Only needed for the SIEM event generator |
 | [Terraform](https://developer.hashicorp.com/terraform/install) (optional) | `terraform --version` | Only for AWS cloud modules |
 
@@ -71,7 +71,7 @@ localhost:8080 (nginx gateway)
 
 postgres:5432  - Shared database (pre-seeded pet shop data)
 redis:6379     - Session store
-dd-agent:8126  - Datadog Agent (APM + Logs + CWS + Process)
+dd-agent:8126  - Datadog Agent (APM + Logs + CWS + Process + SBOM + Compliance)
 ```
 
 ## Vulnerable App: Bits & Bytes Pet Shop

@@ -40,6 +40,7 @@ services:
 
   dd-agent:
     image: gcr.io/datadoghq/agent:latest
+    pid: host
     environment:
       - DD_API_KEY=${DD_API_KEY}
       - DD_APP_KEY=${DD_APP_KEY}
@@ -58,6 +59,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /sys/kernel/debug:/sys/kernel/debug
       - ./agent/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
       - ./agent/system-probe.yaml:/etc/datadog-agent/system-probe.yaml:ro
       - ./agent/conf.d/siem-logs.yaml:/etc/datadog-agent/conf.d/siem-logs.d/conf.yaml:ro

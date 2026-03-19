@@ -53,4 +53,4 @@ CIEM findings appear after Datadog processes the IAM configuration (typically wi
 ## Reference
 
 - [CIEM Documentation](https://docs.datadoghq.com/security/cloud_security_management/identity_risks/)
-- [CIEM Documentation](https://docs.datadoghq.com/security/cloud_security_management/identity_risks/)
+- [IAM Best Practices (AWS)](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)

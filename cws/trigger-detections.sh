@@ -10,7 +10,7 @@
 # corporate network monitoring even when originating from containers.
 #
 # Usage:
-#   docker compose exec python-app bash /app/cws/trigger-detections.sh
+#   docker compose exec python-app bash -c "apt-get update && apt-get install -y netcat-openbsd dnsutils && bash /dev/stdin" < cws/trigger-detections.sh
 #
 # Each function triggers a specific CWS rule category.
 # Run individual functions or "all" to trigger everything.

@@ -54,4 +54,4 @@ Review the source code directly to verify the vulnerability patterns exist.
 ## Reference
 
 - [SAST Documentation](https://docs.datadoghq.com/security/application_security/code_security/static_analysis/)
-- [SAST Troubleshooting](https://docs.datadoghq.com/security/application_security/code_security/static_analysis/)
+- [SAST Troubleshooting](https://docs.datadoghq.com/security/application_security/troubleshooting/)

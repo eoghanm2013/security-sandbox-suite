@@ -10,7 +10,7 @@ The Datadog Agent runs with `DD_RUNTIME_SECURITY_CONFIG_ENABLED=true` and system
 ./scripts/up.sh
 
 # Run CWS trigger scripts inside a container
-docker compose exec python-app bash -c "apt-get update && apt-get install -y netcat-openbsd && bash /dev/stdin" < cws/trigger-detections.sh
+docker compose exec python-app bash -c "apt-get update && apt-get install -y netcat-openbsd dnsutils && bash /dev/stdin" < cws/trigger-detections.sh
 
 # Or run individual trigger categories
 docker compose exec python-app bash -c "$(cat cws/trigger-detections.sh) && trigger_suspicious_process"

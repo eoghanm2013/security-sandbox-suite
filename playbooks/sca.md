@@ -9,15 +9,15 @@ Each app pins intentionally vulnerable dependencies. With `DD_APPSEC_SCA_ENABLED
 | Language | Package | Version | Known CVEs |
 |----------|---------|---------|-----------|
 | Python | pyyaml | 5.3.1 | CVE-2020-14343 (arbitrary code execution) |
-| Python | Jinja2 | 3.1.1 | CVE-2024-22195 (XSS) |
+| Python | Jinja2 | 3.1.2 | CVE-2024-22195 (XSS) |
 | Python | requests | 2.25.0 | CVE-2023-32681 (header leak) |
-| Python | Pillow | 9.0.0 | Multiple CVEs |
+| Python | Pillow | 9.5.0 | Multiple CVEs |
 | Node | lodash | 4.17.20 | CVE-2021-23337 (command injection) |
 | Node | jsonwebtoken | 8.5.1 | CVE-2022-23529 (insecure key handling) |
 | Node | express | 4.17.1 | CVE-2024-29041 (open redirect) |
 | Node | ejs | 3.1.6 | CVE-2022-29078 (RCE) |
 | Java | log4j-core | 2.14.1 | CVE-2021-44228 (Log4Shell) |
-| Java | jackson-databind | 2.13.0 | Multiple CVEs |
+| Java | jackson-databind | 2.15.0 | Multiple CVEs |
 | PHP | guzzlehttp/guzzle | 7.4.0 | CVE-2022-29248 (cookie handling) |
 | PHP | symfony/http-kernel | 6.2.0 | Multiple CVEs |
 
@@ -56,4 +56,4 @@ Each app pins intentionally vulnerable dependencies. With `DD_APPSEC_SCA_ENABLED
 ## Reference
 
 - [SCA Documentation](https://docs.datadoghq.com/security/application_security/software_composition_analysis/)
-- [SCA Troubleshooting](https://docs.datadoghq.com/security/application_security/software_composition_analysis/)
+- [SCA Troubleshooting](https://docs.datadoghq.com/security/application_security/troubleshooting/)
