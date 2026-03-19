@@ -6,6 +6,8 @@
 
 Full-suite Datadog Security product testing environment. Run locally with Docker Compose, extend to AWS for cloud-only products.
 
+**Status:** Local stack (AAP, IAST, SCA, CWS, Cloud SIEM) is fully functional. AWS-based modules (CSPM, CIEM, VM) are in progress.
+
 ## What's Covered
 
 | Product | Local | AWS | How |
