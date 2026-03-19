@@ -22,29 +22,15 @@ Full-suite Datadog Security product testing environment. Run locally with Docker
 
 ## Prerequisites
 
-On a fresh Mac, run these first:
-
-```bash
-# Install Homebrew (if you don't have it)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install Git (macOS may already have it via Xcode CLT)
-brew install git
-
-# Install Docker Desktop
-brew install --cask docker
-# Then open Docker Desktop from Applications and complete the setup wizard
-```
-
-Once those are installed:
+Make sure you have these installed before starting:
 
 | Requirement | How to verify | Notes |
 |-------------|--------------|-------|
-| Docker Desktop running | `docker info` | Must be open and running, not just installed |
-| Git | `git --version` | Comes with Xcode CLT or Homebrew |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | `docker info` | Must be open and running, not just installed |
+| [Git](https://git-scm.com/) | `git --version` | |
 | Datadog API Key | [Get one here](https://app.datadoghq.com/organization-settings/api-keys) | Only required credential |
-| Python 3 (optional) | `python3 --version` | Pre-installed on macOS, only needed for SIEM event generator |
-| Terraform (optional) | `brew install terraform` | Only for AWS cloud modules |
+| Python 3 (optional) | `python3 --version` | Only needed for the SIEM event generator |
+| [Terraform](https://developer.hashicorp.com/terraform/install) (optional) | `terraform --version` | Only for AWS cloud modules |
 
 ## Quick Start
 
