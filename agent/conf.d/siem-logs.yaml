@@ -1,0 +1,48 @@
+logs:
+  - type: file
+    path: /var/log/sandbox/sshd.log
+    source: sshd
+    service: sshd
+    tags:
+      - "env:sandbox"
+      - "team:security-testing"
+
+  - type: file
+    path: /var/log/sandbox/auth.log
+    source: auth
+    service: webapp
+    tags:
+      - "env:sandbox"
+      - "team:security-testing"
+
+  - type: file
+    path: /var/log/sandbox/dns.log
+    source: dns
+    service: dns
+    tags:
+      - "env:sandbox"
+      - "team:security-testing"
+
+  - type: file
+    path: /var/log/sandbox/sudo.log
+    source: sudo
+    service: sudo
+    tags:
+      - "env:sandbox"
+      - "team:security-testing"
+
+  - type: file
+    path: /var/log/sandbox/auditd.log
+    source: auditd
+    service: auditd
+    tags:
+      - "env:sandbox"
+      - "team:security-testing"
+
+  - type: file
+    path: /var/log/sandbox/firewall.log
+    source: firewall
+    service: firewall
+    tags:
+      - "env:sandbox"
+      - "team:security-testing"

@@ -60,6 +60,8 @@ services:
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
       - ./agent/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
       - ./agent/system-probe.yaml:/etc/datadog-agent/system-probe.yaml:ro
+      - ./agent/conf.d/siem-logs.yaml:/etc/datadog-agent/conf.d/siem-logs.d/conf.yaml:ro
+      - siem-logs:/var/log/sandbox
     security_opt:
       - apparmor:unconfined
     cap_add:
@@ -175,5 +177,19 @@ services:
     labels:
       com.datadoghq.ad.logs: '[{"source":"php","service":"petshop-php"}]'
 
+  siem-generator:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./siem:/app:ro
+      - siem-logs:/var/log/sandbox
+    command: ["python3", "event-generator.py", "--loop", "--interval", "60"]
+    depends_on:
+      dd-agent:
+        condition: service_started
+    profiles:
+      - siem
+
 volumes:
   pgdata:
+  siem-logs:

