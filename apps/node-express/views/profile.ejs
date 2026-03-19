@@ -1,0 +1,12 @@
+<%- include('header', { title: username + ' - Bits &amp; Bytes' }) %>
+<div class="card">
+    <h1>Profile: <%- username %></h1>
+    <% if (user) { %>
+    <p><strong>Email:</strong> <%= user.email %></p>
+    <p><strong>Role:</strong> <%= user.role %></p>
+    <p><strong>Member since:</strong> <%= user.created_at %></p>
+    <% } else { %>
+    <div class="alert alert-error">User "<%- username %>" not found.</div>
+    <% } %>
+</div>
+<%- include('footer') %>

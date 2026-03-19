@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${product.name} + ' - Bits &amp; Bytes'">Product - Bits &amp; Bytes</title>
+    <style>
+    :root{--dd-purple:#632CA6;--dd-purple-dark:#4A1D82;--dd-purple-bg:#F5F0FF;--dd-purple-hover:#7C3AED;--dd-orange:#F59E0B;--dd-gray:#6B7280;--dd-gray-light:#F3F4F6;--dd-white:#FFFFFF;--dd-text:#1F2937;--dd-text-light:#6B7280;--dd-radius:8px;--dd-shadow:0 2px 8px rgba(99,44,166,0.12)}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--dd-purple-bg);color:var(--dd-text);line-height:1.6;min-height:100vh}
+    a{color:var(--dd-purple);text-decoration:none}a:hover{text-decoration:underline}
+    header{background:linear-gradient(135deg,var(--dd-purple),var(--dd-purple-dark));color:#fff;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(99,44,166,.3)}
+    header .brand{display:flex;align-items:center;gap:.75rem;font-size:1.25rem;font-weight:700}
+    header .brand svg{width:40px;height:40px}
+    header nav{display:flex;gap:1.5rem;align-items:center}
+    header nav a{color:rgba(255,255,255,.85);font-weight:500;font-size:.9rem}header nav a:hover{color:#fff;text-decoration:none}
+    .tracer-badge{background:rgba(255,255,255,.15);padding:.25rem .75rem;border-radius:20px;font-size:.8rem;font-weight:500}
+    main{max-width:1100px;margin:2rem auto;padding:0 1.5rem}
+    .card{background:var(--dd-white);border-radius:var(--dd-radius);box-shadow:var(--dd-shadow);padding:1.5rem;border:1px solid #E9E0F5;margin-bottom:1.5rem}
+    .product-card .price{color:var(--dd-purple);font-weight:700;font-size:1.1rem}
+    .product-card .category{color:var(--dd-text-light);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em}
+    .btn{display:inline-block;background:var(--dd-purple);color:#fff;padding:.6rem 1.25rem;border:none;border-radius:var(--dd-radius);cursor:pointer;font-size:.9rem;font-weight:600;transition:background .15s}
+    .btn:hover{background:var(--dd-purple-hover);text-decoration:none;color:#fff}
+    .form-group{margin-bottom:1rem}.form-group label{display:block;font-weight:600;margin-bottom:.35rem;font-size:.9rem}
+    .form-group input,.form-group textarea,.form-group select{width:100%;padding:.6rem .75rem;border:1px solid #D1C4E9;border-radius:var(--dd-radius);font-size:.9rem}
+    .form-group input:focus,.form-group textarea:focus{outline:none;border-color:var(--dd-purple);box-shadow:0 0 0 3px rgba(99,44,166,.1)}
+    .review{border-bottom:1px solid #E9E0F5;padding:1rem 0}.review:last-child{border-bottom:none}
+    .review .meta{color:var(--dd-text-light);font-size:.85rem;margin-bottom:.25rem}.review .stars{color:var(--dd-orange)}
+    footer{text-align:center;padding:1.5rem;color:var(--dd-text-light);font-size:.8rem;margin-top:3rem;border-top:1px solid #E9E0F5}
+    footer .tracer-info{color:var(--dd-purple);font-weight:600}
+    h1{font-size:1.5rem;margin-bottom:1rem;color:var(--dd-purple-dark)}h2{font-size:1.25rem;margin-bottom:.75rem;color:var(--dd-purple-dark)}
+    </style>
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+    <main>
+        <div class="card">
+            <div style="display:flex;gap:2rem;align-items:flex-start;">
+                <div style="font-size:5rem;background:var(--dd-gray-light);padding:1.5rem;border-radius:8px;" th:text="${product.image_emoji}">🐾</div>
+                <div style="flex:1;">
+                    <span class="category" style="color:var(--dd-text-light);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;" th:text="${product.category}">category</span>
+                    <h1 style="margin-top:.25rem;" th:text="${product.name}">Product</h1>
+                    <p class="price" style="color:var(--dd-purple);font-weight:700;font-size:1.5rem;margin:.5rem 0;">$<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}">0.00</span></p>
+                    <p style="color:var(--dd-text-light);" th:text="${product.description}">Description</p>
+                    <p style="margin-top:.5rem;font-size:.85rem;color:var(--dd-text-light);">In stock: <span th:text="${product.stock}">0</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Reviews</h2>
+            <th:block th:each="r : ${reviews}">
+                <div class="review">
+                    <div class="meta">
+                        <span class="stars" th:text="${#strings.repeat('★', r.rating) + #strings.repeat('☆', 5 - r.rating)}">★★★★★</span>
+                        &middot; <strong th:text="${r.username}">user</strong> &middot; <span th:text="${r.created_at}">date</span>
+                    </div>
+                    <!-- VULNERABLE: Stored XSS - body rendered unescaped with th:utext -->
+                    <p th:utext="${r.body}">Review body</p>
+                </div>
+            </th:block>
+            <p th:if="${#lists.isEmpty(reviews)}" style="color:var(--dd-text-light);">No reviews yet. Be the first!</p>
+
+            <hr style="margin:1.5rem 0;border:none;border-top:1px solid #E9E0F5;">
+            <h2>Write a Review</h2>
+            <form th:action="${prefix} + '/review'" method="post">
+                <input type="hidden" name="product_id" th:value="${product.id}">
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" name="username" placeholder="anonymous" th:value="${sessionUser}">
+                </div>
+                <div class="form-group">
+                    <label>Rating</label>
+                    <select name="rating">
+                        <option value="5">★★★★★</option>
+                        <option value="4">★★★★☆</option>
+                        <option value="3">★★★☆☆</option>
+                        <option value="2">★★☆☆☆</option>
+                        <option value="1">★☆☆☆☆</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Review</label>
+                    <textarea name="body" rows="3" placeholder="Write your review..."></textarea>
+                </div>
+                <button type="submit" class="btn">Submit Review</button>
+            </form>
+        </div>
+    </main>
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

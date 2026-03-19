@@ -1,0 +1,47 @@
+# Custom CWS Agent Rules for Sandbox Testing
+# Place in /etc/datadog-agent/runtime-security.d/ on the agent
+#
+# These rules detect activity from the sandbox trigger scripts,
+# providing a known-good baseline for testing CWS functionality.
+
+rules:
+  - id: sandbox_suspicious_file_access
+    description: "Sandbox: Sensitive file read"
+    expression: >-
+      open.file.path in ["/etc/passwd", "/etc/shadow", "/etc/sudoers"]
+      && process.file.name not in ["sshd", "login", "su", "sudo"]
+    tags:
+      sandbox: "true"
+      severity: "medium"
+
+  - id: sandbox_metadata_curl
+    description: "Sandbox: Cloud metadata endpoint access"
+    expression: >-
+      dns.question.name in ["metadata.google.internal"]
+      || (exec.file.name == "curl"
+          && exec.argv in [~"169.254.169.254"])
+    tags:
+      sandbox: "true"
+      severity: "high"
+
+  - id: sandbox_reverse_shell_pattern
+    description: "Sandbox: Reverse shell connection attempt"
+    expression: >-
+      exec.file.name in ["nc", "ncat", "netcat"]
+      && exec.argv in [~"4444", ~"4443", ~"1337"]
+    tags:
+      sandbox: "true"
+      severity: "critical"
+
+  - id: sandbox_crypto_miner_dns
+    description: "Sandbox: DNS query to known mining pool"
+    expression: >-
+      dns.question.name in [
+        "pool.minexmr.com",
+        "xmr.pool.minergate.com",
+        "stratum.slushpool.com",
+        "pool.supportxmr.com"
+      ]
+    tags:
+      sandbox: "true"
+      severity: "critical"

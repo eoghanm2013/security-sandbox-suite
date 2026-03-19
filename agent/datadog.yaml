@@ -1,0 +1,30 @@
+apm_config:
+  enabled: true
+  apm_non_local_traffic: true
+
+logs_enabled: true
+logs_config:
+  container_collect_all: true
+
+process_config:
+  process_collection:
+    enabled: true
+  container_collection:
+    enabled: true
+
+runtime_security_config:
+  enabled: true
+  activity_dump:
+    enabled: true
+
+compliance_config:
+  enabled: true
+  host_benchmarks:
+    enabled: true
+
+sbom:
+  enabled: true
+  container_image:
+    enabled: true
+  host:
+    enabled: true

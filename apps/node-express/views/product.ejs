@@ -1,0 +1,56 @@
+<%- include('header', { title: product.name + ' - Bits &amp; Bytes' }) %>
+<div class="card">
+    <div style="display:flex;gap:2rem;align-items:flex-start;">
+        <div style="font-size:5rem;background:var(--dd-gray-light);padding:1.5rem;border-radius:8px;"><%= product.image_emoji %></div>
+        <div style="flex:1;">
+            <span class="category" style="color:var(--dd-text-light);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;"><%= product.category %></span>
+            <h1 style="margin-top:.25rem;"><%= product.name %></h1>
+            <p class="price" style="color:var(--dd-purple);font-weight:700;font-size:1.5rem;margin:.5rem 0;">$<%= Number(product.price).toFixed(2) %></p>
+            <p style="color:var(--dd-text-light);"><%= product.description %></p>
+            <p style="margin-top:.5rem;font-size:.85rem;color:var(--dd-text-light);">In stock: <%= product.stock %></p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Reviews</h2>
+    <% if (reviews && reviews.length > 0) { %>
+    <% reviews.forEach(function(r) { %>
+    <div class="review">
+        <div class="meta">
+            <span class="stars"><% for (let i = 0; i < r.rating; i++) { %>★<% } %><% for (let i = 0; i < 5 - r.rating; i++) { %>☆<% } %></span>
+            &middot; <strong><%= r.username %></strong> &middot; <%= r.created_at %>
+        </div>
+        <p><%- r.body %></p>
+    </div>
+    <% }); %>
+    <% } else { %>
+    <p style="color:var(--dd-text-light);">No reviews yet. Be the first!</p>
+    <% } %>
+
+    <hr style="margin:1.5rem 0;border:none;border-top:1px solid #E9E0F5;">
+    <h2>Write a Review</h2>
+    <form action="<%= prefix %>/review" method="post">
+        <input type="hidden" name="product_id" value="<%= product.id %>">
+        <div class="form-group">
+            <label>Your Name</label>
+            <input type="text" name="username" placeholder="anonymous" value="<%= typeof session !== 'undefined' && session && session.user ? session.user : '' %>">
+        </div>
+        <div class="form-group">
+            <label>Rating</label>
+            <select name="rating">
+                <option value="5">★★★★★</option>
+                <option value="4">★★★★☆</option>
+                <option value="3">★★★☆☆</option>
+                <option value="2">★★☆☆☆</option>
+                <option value="1">★☆☆☆☆</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Review</label>
+            <textarea name="body" rows="3" placeholder="Write your review..."></textarea>
+        </div>
+        <button type="submit" class="btn">Submit Review</button>
+    </form>
+</div>
+<%- include('footer') %>

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Search - Bits &amp; Bytes{% endblock %}
+{% block content %}
+<h1>Search Products</h1>
+
+<form action="{{ prefix }}/search" method="get" class="search-bar">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search products..." autofocus>
+    <button type="submit" class="btn">Search</button>
+</form>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if q %}
+<p style="color:var(--dd-text-light);margin-bottom:1rem;">{{ results|length }} result(s) for "{{ q }}"</p>
+{% endif %}
+
+<div class="product-grid">
+    {% for p in results %}
+    <a href="{{ prefix }}/product/{{ p.id }}" style="text-decoration:none;color:inherit;">
+        <div class="product-card">
+            <div class="emoji">{{ p.image_emoji }}</div>
+            <span class="category">{{ p.category }}</span>
+            <h3>{{ p.name }}</h3>
+            <span class="price">${{ "%.2f"|format(p.price) }}</span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

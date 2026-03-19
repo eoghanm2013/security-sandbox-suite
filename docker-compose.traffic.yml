@@ -1,0 +1,30 @@
+services:
+  traffic-normal:
+    build: ./traffic
+    command: ["run", "--vus", "2", "--duration", "0", "/scripts/scenarios/normal.js"]
+    environment:
+      - TARGET_HOST=nginx
+      - TARGET_PORT=80
+    depends_on:
+      - nginx
+    restart: unless-stopped
+
+  traffic-attacks:
+    build: ./traffic
+    command: ["run", "--vus", "1", "--duration", "0", "/scripts/scenarios/attacks.js"]
+    environment:
+      - TARGET_HOST=nginx
+      - TARGET_PORT=80
+    depends_on:
+      - nginx
+    restart: unless-stopped
+
+  traffic-iast:
+    build: ./traffic
+    command: ["run", "--vus", "1", "--duration", "0", "/scripts/scenarios/iast.js"]
+    environment:
+      - TARGET_HOST=nginx
+      - TARGET_PORT=80
+    depends_on:
+      - nginx
+    restart: unless-stopped

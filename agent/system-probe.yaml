@@ -1,0 +1,10 @@
+runtime_security_config:
+  enabled: true
+  activity_dump:
+    enabled: true
+
+network_config:
+  enabled: true
+
+service_monitoring_config:
+  enabled: true

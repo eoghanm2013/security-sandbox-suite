@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ username }} - Bits &amp; Bytes{% endblock %}
+{% block content %}
+<div class="card">
+    {# VULNERABLE: Reflected XSS - username rendered without escaping #}
+    <h1>Profile: {{ username | safe }}</h1>
+    {% if user %}
+    <p><strong>Email:</strong> {{ user.email }}</p>
+    <p><strong>Role:</strong> {{ user.role }}</p>
+    <p><strong>Member since:</strong> {{ user.created_at }}</p>
+    {% else %}
+    <div class="alert alert-error">User "{{ username | safe }}" not found.</div>
+    {% endif %}
+</div>
+{% endblock %}

