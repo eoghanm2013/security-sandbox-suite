@@ -125,13 +125,13 @@ PROFILES=()
 
 echo ""
 echo "Starting sandbox..."
-docker compose "${PROFILES[@]}" up -d --build
+docker compose ${PROFILES[@]+"${PROFILES[@]}"} up -d --build
 
 if [ "$START_TRAFFIC" = "true" ]; then
     echo ""
     echo "Starting traffic generators..."
     docker compose -f docker-compose.yml -f docker-compose.traffic.yml \
-        "${PROFILES[@]}" up -d --build traffic-normal traffic-attacks traffic-iast
+        ${PROFILES[@]+"${PROFILES[@]}"} up -d --build traffic-normal traffic-attacks traffic-iast
 fi
 
 # ── Summary ─────────────────────────────────────────────────────────────────

@@ -29,20 +29,20 @@ case "$ACTION" in
     start)
         echo "Starting traffic ($PROFILE)..."
         if [ "$PROFILE" = "all" ]; then
-            docker compose -f docker-compose.yml -f docker-compose.traffic.yml up -d --build traffic-normal traffic-attacks traffic-iast
+            docker compose --profile apps -f docker-compose.yml -f docker-compose.traffic.yml up -d --build traffic-normal traffic-attacks traffic-iast
         else
-            docker compose -f docker-compose.yml -f docker-compose.traffic.yml up -d --build "traffic-${PROFILE}"
+            docker compose --profile apps -f docker-compose.yml -f docker-compose.traffic.yml up -d --build "traffic-${PROFILE}"
         fi
         echo "Traffic running."
         ;;
     stop)
         echo "Stopping traffic..."
-        docker compose -f docker-compose.yml -f docker-compose.traffic.yml stop traffic-normal traffic-attacks traffic-iast 2>/dev/null || true
-        docker compose -f docker-compose.yml -f docker-compose.traffic.yml rm -f traffic-normal traffic-attacks traffic-iast 2>/dev/null || true
+        docker compose --profile apps -f docker-compose.yml -f docker-compose.traffic.yml stop traffic-normal traffic-attacks traffic-iast 2>/dev/null || true
+        docker compose --profile apps -f docker-compose.yml -f docker-compose.traffic.yml rm -f traffic-normal traffic-attacks traffic-iast 2>/dev/null || true
         echo "Traffic stopped."
         ;;
     status)
-        docker compose -f docker-compose.yml -f docker-compose.traffic.yml ps traffic-normal traffic-attacks traffic-iast 2>/dev/null || echo "No traffic containers running."
+        docker compose --profile apps -f docker-compose.yml -f docker-compose.traffic.yml ps traffic-normal traffic-attacks traffic-iast 2>/dev/null || echo "No traffic containers running."
         ;;
     *)
         usage
