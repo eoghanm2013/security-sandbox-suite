@@ -1,52 +1,109 @@
 # CWS (Workload Protection) Investigation Playbook
 
-## What This Tests
+## What is CWS?
 
-The Datadog Agent runs with `DD_RUNTIME_SECURITY_CONFIG_ENABLED=true` and system-probe, monitoring process execution, file access, and network activity inside containers. Trigger scripts generate detectable events.
+CWS (Cloud Workload Security, now called Workload Protection) monitors what processes, files, and network connections are happening inside your containers and hosts at the kernel level. It uses eBPF (a Linux kernel technology) to watch for suspicious behavior like crypto-miner processes, reverse shells, unauthorized file modifications, or attempts to access cloud metadata endpoints.
+
+**How it differs from AAP:** AAP watches HTTP traffic going into your app. CWS watches the operating system itself. If someone gains access to a container and runs `whoami` or tries to download a crypto-miner, CWS detects that, even though it has nothing to do with HTTP requests.
+
+**How it works in this sandbox:** The Datadog Agent runs with system-probe enabled, which loads eBPF programs into the Docker Desktop Linux VM's kernel. A trigger script simulates common attack patterns (recon commands, crypto-miner DNS lookups, reverse shell attempts) inside a container. The agent detects these and reports them as CWS signals.
 
 ## Quick Start
 
+Select option `5` (CWS) or `7` (All) when running:
+
 ```bash
 ./scripts/up.sh
+```
 
-# Run CWS trigger scripts inside a container
-docker compose exec python-app bash -c "apt-get update && apt-get install -y netcat-openbsd dnsutils && bash /dev/stdin" < cws/trigger-detections.sh
+Then run the trigger script inside one of the app containers:
 
-# Or run individual trigger categories
-docker compose exec python-app bash -c "$(cat cws/trigger-detections.sh) && trigger_suspicious_process"
+```bash
+docker compose exec python-app bash -c \
+  "apt-get update && apt-get install -y netcat-openbsd dnsutils && bash /dev/stdin" \
+  < cws/trigger-detections.sh
 ```
 
 ## Verify It's Working
 
-1. Open Datadog > Security > Workload Security
-2. Look for signals from host `sandbox-suite`
-3. Check Security > Workload Security > Signals for triggered rules
-4. Verify the agent is running system-probe: `docker compose exec dd-agent agent status | grep "Runtime Security"`
+1. Confirm system-probe is active:
 
-## Trigger Categories
+```bash
+docker compose exec dd-agent agent status 2>&1 | grep -A 3 "CWS"
+```
 
-| Category | Script | What It Does |
-|----------|--------|-------------|
-| Suspicious Process | `trigger_suspicious_process` | whoami, uname, ps aux, network recon |
-| File Integrity (FIM) | `trigger_fim` | Write to /etc/passwd copy, modify crontab, touch SSH config |
-| Crypto-miner Patterns | `trigger_crypto_patterns` | DNS queries to mining pools, miner-named processes |
-| Reverse Shell | `trigger_reverse_shell` | nc connection attempts, Python socket connect |
-| Metadata Access | `trigger_metadata_access` | curl to AWS/GCP/Azure metadata endpoints |
-| Privilege Escalation | `trigger_privesc` | sudo attempts, SUID binary search, capability checks |
+2. Open **Datadog > Security > Workload Security**
+3. Look for signals from host `sandbox-suite`
+4. Signals should appear within 2-5 minutes of running the trigger script
+
+## What the Trigger Script Does
+
+The script runs harmless simulations of real attack patterns inside a container. Each one is designed to match a Datadog detection rule.
+
+| Category | What It Simulates | Example |
+|----------|------------------|---------|
+| Suspicious Process | Attacker running recon commands after gaining access | `whoami`, `id`, `uname -a`, `ps aux` |
+| File Integrity (FIM) | Attacker modifying system files to persist | Copies `/etc/passwd`, creates crontab entries, touches SSH config |
+| Crypto-miner Patterns | Compromised container mining cryptocurrency | DNS lookups to `pool.minexmr.com`, processes named `xmrig` |
+| Reverse Shell | Attacker opening a backdoor connection | `nc` connection attempts, Python socket connects to external IP |
+| Metadata Access | Container trying to steal cloud credentials | `curl` to `169.254.169.254` (AWS/GCP/Azure metadata) |
+| Privilege Escalation | Attacker trying to gain root | `sudo` attempts, searching for SUID binaries |
+
+You can run individual categories:
+
+```bash
+# Just run the crypto-miner simulation
+docker compose exec python-app bash -c \
+  "apt-get update -qq && apt-get install -y -qq dnsutils > /dev/null && bash /dev/stdin crypto" \
+  < cws/trigger-detections.sh
+```
 
 ## Common Escalation Patterns
 
-| Escalation Type | How to Reproduce | What to Check |
-|----------------|-----------------|---------------|
-| "CWS not detecting process execution" | Run trigger scripts, check signals | Verify system-probe is running, check kernel version |
-| "Agent rule not firing" | Check rule expression syntax | Review custom-rules.yaml, verify rule is loaded |
-| "FIM not working" | Modify a monitored file, check for signal | Verify FIM paths in agent config |
-| "CWS on Fargate/Windows" | Not testable locally (eBPF-less mode) | Escalate with customer environment details |
-| "eBPF probe loading failure" | Check `docker compose logs dd-agent` for probe errors | Kernel version must be 4.14+, check security modules |
+### "CWS not detecting process execution"
+
+**What the customer says:** "We see suspicious processes in our containers but CWS isn't generating signals."
+
+**How to investigate:**
+
+1. Check that system-probe is running:
+
+```bash
+docker compose exec dd-agent agent status 2>&1 | grep -A 5 "System Probe"
+# Should show "Status: Running"
+```
+
+2. Check that CWS is enabled:
+
+```bash
+docker compose exec dd-agent agent status 2>&1 | grep "feature_cws_enabled"
+# Should show: feature_cws_enabled: true
+```
+
+3. Run the trigger script and watch for the output (it prints what it's doing)
+4. If system-probe isn't running, check logs: `docker compose logs dd-agent 2>&1 | grep -i "system-probe\|cws\|runtime"`
+
+**Common causes:** Missing `pid: host` in docker-compose.yml, missing `/sys/kernel/debug` volume mount, or the kernel not supporting eBPF.
+
+---
+
+### "eBPF probe loading failure"
+
+**What the customer says:** "system-probe fails to start with eBPF errors."
+
+**What this means:** CWS needs to load small programs into the Linux kernel using eBPF. This requires kernel 4.14+ and certain kernel headers or BTF data. On Docker Desktop (Mac/Windows), this usually works because Docker runs a compatible Linux VM. On customer hosts, the kernel may be too old or have security modules (SELinux, AppArmor) blocking eBPF.
+
+**How to check:** `docker compose logs dd-agent 2>&1 | grep -i "ebpf\|probe\|kernel"`
+
+---
+
+### "CWS on Fargate/Windows"
+
+**Not testable locally.** CWS uses eBPF, which requires a Linux kernel. On Fargate and Windows, Datadog offers an "eBPF-less" mode with reduced functionality. If a customer asks about this, escalate with their specific environment details.
 
 ## Custom Rules
 
-Custom rules are in `cws/custom-rules.yaml`. To load them:
+Custom detection rules are in `cws/custom-rules.yaml`. To load them into the agent:
 
 ```bash
 docker compose cp cws/custom-rules.yaml dd-agent:/etc/datadog-agent/runtime-security.d/
@@ -55,9 +112,9 @@ docker compose restart dd-agent
 
 ## Troubleshooting
 
-- **system-probe not starting:** Ensure `SYS_ADMIN` capability is granted, check Docker socket mount
-- **No signals:** Verify `DD_RUNTIME_SECURITY_CONFIG_ENABLED=true`, check agent status
-- **Kernel compatibility:** CWS requires kernel 4.14+ with eBPF support. macOS Docker Desktop uses a Linux VM, so this should work.
+- **system-probe not starting:** Make sure `docker-compose.yml` has `pid: host` and the `/sys/kernel/debug` volume mount on the agent.
+- **No signals after trigger script:** Check `docker compose exec dd-agent agent status` for CWS-related errors. Verify rules are loaded (look for "loaded" vs "filtered" in the rule list).
+- **Kernel compatibility:** Docker Desktop on Mac/Windows uses a Linux VM that should support eBPF. On bare-metal Linux, kernel 4.14+ is required.
 
 ## Reference
 

@@ -1,8 +1,14 @@
 # SCA (Software Composition Analysis) Investigation Playbook
 
-## What This Tests
+## What is SCA?
 
-Each app pins intentionally vulnerable dependencies. With `DD_APPSEC_SCA_ENABLED=true`, the tracer detects loaded libraries at runtime and reports known CVEs. The dependency manifests also serve as static SCA scan targets.
+SCA (Software Composition Analysis) checks the third-party libraries your application uses for known security vulnerabilities (CVEs). Most modern apps are 80%+ open-source code, so a vulnerability in a dependency like Log4j or Jinja2 can be just as dangerous as a bug in your own code.
+
+**Two modes:**
+- **Runtime SCA** (`DD_APPSEC_SCA_ENABLED=true`): The tracer detects which libraries are actually loaded when the app runs, and reports any with known CVEs. This only flags libraries that are genuinely in use.
+- **Static SCA**: Scans dependency manifests (`requirements.txt`, `package.json`, `pom.xml`) in your repo or CI pipeline. This catches everything declared, even dev-only dependencies that never run in production.
+
+**How it works in this sandbox:** Each app intentionally pins old, vulnerable versions of popular libraries. When the apps start with SCA enabled, the tracer reports these to Datadog, and they appear as library vulnerabilities in the Security section.
 
 ### Pinned Vulnerable Dependencies
 
@@ -23,35 +29,79 @@ Each app pins intentionally vulnerable dependencies. With `DD_APPSEC_SCA_ENABLED
 
 ## Quick Start
 
+Select option `3` (SCA) or `7` (All) when running:
+
 ```bash
 ./scripts/up.sh
+```
 
-# SCA runs automatically on app startup when DD_APPSEC_SCA_ENABLED=true
-# Just send some traffic to ensure traces flow
+SCA runs automatically when the apps start. You just need to send some traffic so the tracer reports the loaded libraries:
+
+```bash
 ./scripts/traffic.sh start normal
 ```
 
 ## Verify It's Working
 
-1. Open Datadog > Security > Application Security > Vulnerabilities
+1. Open **Datadog > Security > Application Security > Vulnerabilities**
 2. Filter by vulnerability type: "Library Vulnerability"
 3. You should see findings for each service's vulnerable dependencies
-4. Click a finding to see the affected library, CVE, and severity
+4. Click a finding to see the affected library, CVE, and severity score
 
 ## Common Escalation Patterns
 
-| Escalation Type | How to Reproduce | What to Check |
-|----------------|-----------------|---------------|
-| "SCA not detecting vulnerable library" | Check if the library is loaded at runtime | Verify `DD_APPSEC_SCA_ENABLED=true`, check if library is in lock file |
-| "SCA shows dev-only deps as runtime" | Compare runtime SCA findings with static scan | Runtime SCA only detects actually-loaded libraries |
-| "Severity doesn't match NVD" | Check the specific CVE details | Datadog uses CVSS + EPSS + CISA KEV for scoring |
-| "SCA findings disappeared after deploy" | Rebuild container, check dependency versions | Verify the lock file hasn't been updated |
+### "SCA not detecting vulnerable library"
+
+**What the customer says:** "We have Log4j 2.14.1 in our Java app but SCA doesn't report it."
+
+**How to investigate:**
+
+1. Confirm SCA is enabled:
+
+```bash
+docker compose exec java-app env | grep SCA
+# Should show DD_APPSEC_SCA_ENABLED=true
+```
+
+2. Send a few requests so the tracer has a chance to report loaded libraries:
+
+```bash
+curl "http://localhost:8080/java/health"
+curl "http://localhost:8080/java/search?q=test"
+```
+
+3. Wait 2-3 minutes, then check **Security > Application Security > Vulnerabilities**
+4. If still nothing, check tracer logs for errors: `docker compose logs java-app 2>&1 | head -30`
+
+**Key distinction:** Runtime SCA only reports libraries that are actually loaded into memory. If a library is in `pom.xml` but never imported by the code, runtime SCA won't see it. Static SCA (in CI) catches those.
+
+---
+
+### "SCA shows dev-only deps as runtime"
+
+**What the customer says:** "SCA flagged a library that's only in our dev dependencies, not production."
+
+**How to explain:** If they're seeing it in runtime SCA, the library is being loaded at runtime regardless of where it's declared. This can happen if a test framework or dev tool is accidentally bundled into the production image. If they're seeing it in static SCA only, that's expected since static scans read the manifest file and can't distinguish dev vs production dependencies without explicit configuration.
+
+---
+
+### "Severity doesn't match NVD"
+
+**What the customer says:** "NVD says this CVE is a 9.8 Critical but Datadog shows it as High."
+
+**How to explain:** Datadog doesn't use raw CVSS scores alone. The severity factors in:
+- **CVSS base score** (from NVD)
+- **EPSS** (Exploit Prediction Scoring System, likelihood of real-world exploitation)
+- **CISA KEV** (Known Exploited Vulnerabilities catalog)
+- **Runtime context** (is the vulnerable function actually reachable?)
+
+This means a CVE with a high CVSS but no known exploits and no reachable code path may be scored lower than one with a moderate CVSS that's actively exploited.
 
 ## Troubleshooting
 
-- **No SCA findings:** Confirm `DD_APPSEC_SCA_ENABLED=true`, send some traffic so the tracer reports loaded libraries
-- **Partial findings:** Not all package ecosystems have the same CVE coverage. Check Datadog's vulnerability database.
-- **Runtime vs static mismatch:** Runtime SCA only sees loaded libraries. Static SCA scans manifests/lock files.
+- **No SCA findings:** Run `docker compose exec python-app env | grep SCA` to confirm the flag is set. Send some traffic so the tracer reports loaded libraries.
+- **Partial findings:** Not all package ecosystems have the same CVE coverage. Java and Python have the broadest coverage.
+- **Runtime vs static mismatch:** Runtime SCA only reports libraries actually loaded at runtime. Static SCA reads manifests. The two will differ.
 
 ## Reference
 
