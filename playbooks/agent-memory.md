@@ -10,7 +10,7 @@ The critical distinction for security memory investigations:
 
 | Side | Features | Where Memory Impact Is | Container to Monitor |
 |------|----------|----------------------|---------------------|
-| Agent | CWS, CSPM, VM/SBOM | dd-agent container | `dd-agent` |
+| Agent | CWS, SBOM | dd-agent container | `dd-agent` |
 | Tracer | AAP, IAST, SCA | App container (via dd-trace) | `python-app`, `node-app`, `java-app`, `php-app` |
 
 A common confusion is reporting "agent memory went up after enabling ASM" when AAP actually runs in the app process, not the agent.
@@ -38,7 +38,7 @@ docker stats
 |------------|---------|
 | APM + Logs (no security) | 256MB |
 | + CWS | 512MB |
-| + CWS + CSPM + SBOM | 768MB |
+| + CWS + SBOM | 768MB |
 | All agent security | 1GB |
 
 ### Tracer-side (app process)

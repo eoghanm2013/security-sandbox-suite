@@ -4,18 +4,15 @@ Per-product guides for using the Security Sandbox Suite to test and reproduce is
 
 ## Quick Reference
 
-| Playbook | Product | Local | AWS | Primary Use Case |
-|----------|---------|-------|-----|-----------------|
-| [aap.md](aap.md) | App & API Protection | Yes | - | WAF detection, attack blocking, IP/user blocking |
-| [iast.md](iast.md) | IAST | Yes | - | Source-to-sink taint tracking, exploitable code paths |
-| [sca.md](sca.md) | SCA | Yes | - | Vulnerable dependency detection (runtime + static) |
-| [sast.md](sast.md) | SAST | Yes | - | Static code scanning for hardcoded secrets, SQLi patterns |
-| [cws.md](cws.md) | Workload Protection | Yes | - | Process monitoring, FIM, container security |
-| [siem.md](siem.md) | Cloud SIEM | Yes | Yes | Detection rules, log pipelines, signals |
-| [cspm.md](cspm.md) | CSPM | - | Yes | Cloud misconfiguration detection |
-| [ciem.md](ciem.md) | CIEM | - | Yes | Identity risk, over-permissioned IAM |
-| [vm.md](vm.md) | Vulnerability Mgmt | - | Yes | Host/container vulnerability scanning |
-| [agent-memory.md](agent-memory.md) | Agent Memory | Yes | - | Memory impact investigation when security features enabled |
+| Playbook | Product | Primary Use Case |
+|----------|---------|-----------------|
+| [aap.md](aap.md) | App & API Protection | WAF detection, attack blocking, IP/user blocking |
+| [iast.md](iast.md) | IAST | Source-to-sink taint tracking, exploitable code paths |
+| [sca.md](sca.md) | SCA | Vulnerable dependency detection (runtime + static) |
+| [sast.md](sast.md) | SAST | Static code scanning for hardcoded secrets, SQLi patterns |
+| [cws.md](cws.md) | Workload Protection | Process monitoring, FIM, container security |
+| [siem.md](siem.md) | Cloud SIEM | Detection rules, log pipelines, signals |
+| [agent-memory.md](agent-memory.md) | Agent Memory | Memory impact investigation when security features enabled |
 
 ## How to Use
 

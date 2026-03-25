@@ -87,23 +87,6 @@ You should see `cloudtrail.log` and `okta.log` with `Status: OK`.
 3. Make sure it's enabled
 4. Click a log in Log Search and check if the extracted attributes match what the detection rule queries
 
----
-
-### "CloudTrail logs not appearing (AWS)"
-
-**What the customer says:** "We set up the AWS integration but no CloudTrail logs show up."
-
-**Note:** This requires the AWS module (not testable with just the local stack). CloudTrail delivers logs to S3 every ~5 minutes, and then the Datadog AWS integration reads them from S3. There's a delay of 5-15 minutes before logs appear.
-
-## Quick Start (AWS)
-
-```bash
-./scripts/aws-deploy.sh    # Deploys CloudTrail, VPC Flow Logs, GuardDuty via Terraform
-./scripts/aws-destroy.sh   # Tear down when done
-```
-
-Configure the Datadog AWS integration to ingest CloudTrail logs. See: [CloudTrail Integration Docs](https://docs.datadoghq.com/integrations/amazon_cloudtrail/)
-
 ## Troubleshooting
 
 - **No logs in Datadog:** Run `docker compose exec dd-agent agent status 2>&1 | grep -A 10 "siem-logs"` to check the agent is tailing the files. Verify log files exist: `docker compose exec siem-generator ls -la /var/log/sandbox/`

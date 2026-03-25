@@ -4,23 +4,20 @@
 > It is designed for testing and learning with Datadog Security products.
 > Do NOT deploy to production or expose to the internet.
 
-Full-suite Datadog Security product testing environment. Run locally with Docker Compose, extend to AWS for cloud-only products.
+Full-suite Datadog Security product testing environment. Run locally with Docker Compose.
 
-**Status:** Local stack (AAP, IAST, SCA, CWS, Cloud SIEM) is fully functional. AWS-based modules (CSPM, CIEM, VM) are in progress.
+**Status:** Local stack is fully functional.
 
 ## What's Covered
 
-| Product | Local | AWS | How |
-|---------|-------|-----|-----|
-| **AAP** (App & API Protection) | Yes | - | 4 vulnerable web apps with `DD_APPSEC_ENABLED` |
-| **IAST** | Yes | - | Same apps with `DD_IAST_ENABLED`, tainted data flows |
-| **SCA** | Yes | - | Pinned vulnerable deps, `DD_APPSEC_SCA_ENABLED` |
-| **SAST** | Yes | - | App source code has intentional vulns (scan target) |
-| **CWS** (Workload Protection) | Yes | - | Agent with system-probe, trigger scripts |
-| **Cloud SIEM** | Yes | Yes | Local event generator + AWS CloudTrail/GuardDuty |
-| **CSPM** | - | Yes | Intentionally misconfigured S3, SG, EBS |
-| **CIEM** | - | Yes | Over-permissioned IAM roles, cross-account access |
-| **VM** (Vulnerabilities) | - | Yes | EC2 with vulnerable packages, ECR with vuln images |
+| Product | How |
+|---------|-----|
+| **AAP** (App & API Protection) | 4 vulnerable web apps with `DD_APPSEC_ENABLED` |
+| **IAST** | Same apps with `DD_IAST_ENABLED`, tainted data flows |
+| **SCA** | Pinned vulnerable deps, `DD_APPSEC_SCA_ENABLED` |
+| **SAST** | App source code has intentional vulns (scan target) |
+| **CWS** (Workload Protection) | Agent with system-probe, trigger scripts |
+| **Cloud SIEM** | Local event generator producing fake CloudTrail + Okta logs |
 
 ## Prerequisites
 
@@ -32,7 +29,6 @@ Make sure you have these installed before starting:
 | [Git](https://git-scm.com/) | `git --version` | |
 | Datadog API Key | [Get one here](https://app.datadoghq.com/organization-settings/api-keys) | Required. App Key is optional (see `.env.example`). |
 | Python 3 (optional) | `python3 --version` | Only needed for the SIEM event generator |
-| [Terraform](https://developer.hashicorp.com/terraform/install) (optional) | `terraform --version` | Only for AWS cloud modules |
 
 If you only want to test a specific product, check the [`playbooks/`](playbooks/) folder for per-product guides.
 
@@ -94,8 +90,6 @@ Each language implements the same pet supply store with identical vulnerability 
 | `scripts/down.sh` | Stop everything |
 | `scripts/traffic.sh start [profile]` | Start traffic (all/normal/attacks/iast) |
 | `scripts/traffic.sh stop` | Stop traffic generators |
-| `scripts/aws-deploy.sh` | Deploy AWS resources (Terraform) |
-| `scripts/aws-destroy.sh` | Tear down AWS resources |
 
 ## Cleanup
 
@@ -108,15 +102,6 @@ Each language implements the same pet supply store with identical vulnerability 
 
 # Full cleanup: containers, volumes, and built images
 ./scripts/down.sh -v --rmi local
-```
-
-## AWS (On-Demand)
-
-Cloud-only products use Terraform in `terraform/aws/`. Tag your resources appropriately for your environment.
-
-```bash
-./scripts/aws-deploy.sh    # Plan + apply
-./scripts/aws-destroy.sh   # Destroy when done
 ```
 
 ## Playbooks
