@@ -17,7 +17,32 @@ if [ ! -f "$SUITE_ENV" ]; then
     fi
     sed -i.bak "s/^DD_API_KEY=.*/DD_API_KEY=${api_key}/" "$SUITE_ENV"
     rm -f "$SUITE_ENV.bak"
-    echo "Saved to .env"
+
+    echo ""
+    echo "Which Datadog site is your org on?"
+    echo ""
+    echo "  [1] datadoghq.com       (US1 - default)"
+    echo "  [2] us3.datadoghq.com   (US3)"
+    echo "  [3] us5.datadoghq.com   (US5)"
+    echo "  [4] datadoghq.eu        (EU1)"
+    echo "  [5] ap1.datadoghq.com   (AP1)"
+    echo "  [6] ddog-gov.com        (US1-FED / GovCloud)"
+    echo ""
+    echo "Not sure? Check your browser URL when logged into Datadog."
+    read -rp "Enter choice [1]: " site_choice
+    case "${site_choice:-1}" in
+        1) dd_site="datadoghq.com" ;;
+        2) dd_site="us3.datadoghq.com" ;;
+        3) dd_site="us5.datadoghq.com" ;;
+        4) dd_site="datadoghq.eu" ;;
+        5) dd_site="ap1.datadoghq.com" ;;
+        6) dd_site="ddog-gov.com" ;;
+        *) echo "Unknown option, defaulting to datadoghq.com"; dd_site="datadoghq.com" ;;
+    esac
+    sed -i.bak "s|^DD_SITE=.*|DD_SITE=${dd_site}|" "$SUITE_ENV"
+    rm -f "$SUITE_ENV.bak"
+
+    echo "Saved to .env (site: ${dd_site})"
     echo ""
 fi
 

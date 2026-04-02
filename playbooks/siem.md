@@ -89,9 +89,49 @@ You should see `cloudtrail.log` and `okta.log` with `Status: OK`.
 
 ## Troubleshooting
 
-- **No logs in Datadog:** Run `docker compose exec dd-agent agent status 2>&1 | grep -A 10 "siem-logs"` to check the agent is tailing the files. Verify log files exist: `docker compose exec siem-generator ls -la /var/log/sandbox/`
-- **Logs appear but no signals:** Check the `source` tag on your logs in Log Explorer. If it's wrong (e.g., `source:file` instead of `source:cloudtrail`), the OOTB rules won't match.
-- **Generator not producing events:** Check its logs: `docker compose logs siem-generator --tail 20`
+### Agent fails with 403 "API Key invalid"
+
+If the dd-agent container logs show errors like:
+
+```
+API Key invalid (403 response), dropping transaction for https://process.datadoghq.com./api/v1/collector
+```
+
+This almost always means **your `DD_SITE` doesn't match the site your Datadog org is on**. The API key is valid, but it's being sent to the wrong Datadog datacenter.
+
+**How to fix:**
+
+1. Log into Datadog in your browser and check the URL:
+   - `app.datadoghq.com` = US1 (set `DD_SITE=datadoghq.com`)
+   - `app.us3.datadoghq.com` = US3 (set `DD_SITE=us3.datadoghq.com`)
+   - `app.us5.datadoghq.com` = US5 (set `DD_SITE=us5.datadoghq.com`)
+   - `app.datadoghq.eu` = EU1 (set `DD_SITE=datadoghq.eu`)
+   - `app.ap1.datadoghq.com` = AP1 (set `DD_SITE=ap1.datadoghq.com`)
+   - `app.ddog-gov.com` = GovCloud (set `DD_SITE=ddog-gov.com`)
+
+2. Update `DD_SITE` in your `.env` file to match
+
+3. Restart the stack:
+   ```bash
+   ./scripts/down.sh
+   ./scripts/up.sh
+   ```
+
+Other causes of 403 errors:
+- **Using an Application Key instead of an API Key.** Go to Organization Settings > API Keys (not Application Keys) and copy the correct key.
+- **Revoked or deleted API key.** Verify your key is still active in the Datadog UI.
+
+### No logs in Datadog
+
+Run `docker compose exec dd-agent agent status 2>&1 | grep -A 10 "siem-logs"` to check the agent is tailing the files. Verify log files exist: `docker compose exec siem-generator ls -la /var/log/sandbox/`
+
+### Logs appear but no signals
+
+Check the `source` tag on your logs in Log Explorer. If it's wrong (e.g., `source:file` instead of `source:cloudtrail`), the OOTB rules won't match. Also make sure Cloud SIEM is enabled in your Datadog org (Security > Cloud SIEM).
+
+### Generator not producing events
+
+Check its logs: `docker compose logs siem-generator --tail 20`
 
 ## Reference
 

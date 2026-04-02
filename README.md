@@ -27,8 +27,14 @@ Make sure you have these installed before starting:
 |-------------|--------------|-------|
 | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | `docker info` | Must be open and running, not just installed |
 | [Git](https://git-scm.com/) | `git --version` | |
-| Datadog API Key | [Get one here](https://app.datadoghq.com/organization-settings/api-keys) | Required. App Key is optional (see `.env.example`). |
+| Datadog API Key | [Get one here](https://app.datadoghq.com/organization-settings/api-keys) | Required. Must be an **API Key** (not an Application Key). |
 | Python 3 (optional) | `python3 --version` | Only needed for the SIEM event generator |
+
+**Important setup notes:**
+
+- **Know your Datadog site.** The setup script will ask which site your org is on (US1, US3, US5, EU1, AP1, or GovCloud). Using the wrong site will cause 403 "API Key invalid" errors. Check your browser URL when logged into Datadog -- e.g. `app.us3.datadoghq.com` means US3.
+- **Enable the products you want to test** in your Datadog org before running the sandbox. For example, Cloud SIEM must be enabled in your org's settings for SIEM signals to appear. The sandbox generates the data, but your org needs the product enabled to process it.
+- **API Key vs Application Key:** The `DD_API_KEY` field requires an API Key (found under Organization Settings > API Keys). Application Keys are different and will not work here. `DD_APP_KEY` is optional and only needed for API-based features like IP blocking in AAP.
 
 If you only want to test a specific product, check the [`playbooks/`](playbooks/) folder for per-product guides.
 
@@ -44,7 +50,7 @@ cd security-sandbox-suite
 ```
 
 The startup script will:
-1. Create `.env` and ask for your `DD_API_KEY` (first run only)
+1. Create `.env` and ask for your `DD_API_KEY` and Datadog site (first run only)
 2. Show a product menu where you pick what to test
 3. Optionally start traffic generators
 4. Launch only the containers you need
